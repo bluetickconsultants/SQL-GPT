@@ -45,13 +45,6 @@ def contains_write_keywords(text):
 
     return False
 
-class DisabledPrint:
-    def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = io.StringIO()
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        sys.stdout = self._stdout
 
 @app.route('/ask', methods=['POST'])
 def ask_question():
@@ -60,12 +53,8 @@ def ask_question():
         question = data['question']
         if contains_write_keywords(question):
             return jsonify({'error': 'Query contains write keywords'}), 400
-        else:
-            with DisabledPrint():
-                ans = agent_executor.run(question)
-                console_output = sys.stdout.getvalue()
-
-            return jsonify({'answer': ans, 'console_output': console_output})
+        ans=agent_executor.run(question)
+        return jsonify({'answer': ans})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
