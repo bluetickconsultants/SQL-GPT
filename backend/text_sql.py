@@ -33,6 +33,7 @@ agent_executor = create_sql_agent(
     toolkit=toolkit,
     verbose=False,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    handle_parsing_errors=True,
 )
 
 def contains_write_keywords(text):
