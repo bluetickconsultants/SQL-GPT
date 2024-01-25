@@ -1,8 +1,8 @@
-from flask import Flask, request, jsonify, session, redirect, url_for
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import Flask, request, jsonify
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
@@ -22,6 +22,8 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a secret key for JWT
+jwt = JWTManager(app)
 db = SQLAlchemy(app)
 
 class User(db.Model):
@@ -61,17 +63,20 @@ def contains_write_keywords(text):
     return False
 
 @app.route('/ask', methods=['POST'])
+@jwt_required()
 def ask_question():
     try:
+        current_user = get_jwt_identity()
         data = request.get_json()
         question = data['question']
+
         if contains_write_keywords(question):
             return jsonify({'error': 'Query contains write keywords'}), 400
         else:
             ans = agent_executor.run(question)
-            return jsonify({'answer': ans})
+            return jsonify({'user': current_user, 'answer': ans})
     except Exception as e:
-            return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/login', methods=['POST'])
@@ -83,8 +88,8 @@ def login():
 
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
-            session['user_id'] = user.id
-            return jsonify({'message': 'Login successful'})
+            access_token = create_access_token(identity=username)
+            return jsonify({'access_token': access_token, 'message': 'Login successful'})
         else:
             return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
