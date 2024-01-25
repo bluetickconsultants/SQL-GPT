@@ -1,3 +1,6 @@
+from flask import Flask, request, jsonify, session, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask import Flask, request, jsonify
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
@@ -13,6 +16,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
+db = SQLAlchemy(app)
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
 
 # LangChain configuration
 username = os.getenv("POSTGRES_USERNAME")
@@ -31,9 +44,8 @@ toolkit = SQLDatabaseToolkit(db=db, llm=gpt)
 agent_executor = create_sql_agent(
     llm=gpt,
     toolkit=toolkit,
-    verbose=False,
+    verbose=True,
     agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-    handle_parsing_errors=True,
 )
 
 def contains_write_keywords(text):
@@ -46,7 +58,6 @@ def contains_write_keywords(text):
 
     return False
 
-
 @app.route('/ask', methods=['POST'])
 def ask_question():
     try:
@@ -54,10 +65,49 @@ def ask_question():
         question = data['question']
         if contains_write_keywords(question):
             return jsonify({'error': 'Query contains write keywords'}), 400
-        ans=agent_executor.run(question)
-        return jsonify({'answer': ans})
+        else:
+            ans = agent_executor.run(question)
+            return jsonify({'answer': ans})
+    except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    try:
+        data = request.get_json()
+        username = data['username']
+        password = data['password']
+
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            session['user_id'] = user.id
+            return jsonify({'message': 'Login successful'})
+        else:
+            return jsonify({'error': 'Invalid credentials'}), 401
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/create-user', methods=['POST'])
+def create_user():
+    try:
+        data = request.get_json()
+        username = data['username']
+        password = data['password']
+
+        if User.query.filter_by(username=username).first():
+            return jsonify({'error': 'Username already exists'}), 400
+
+        hashed_password = generate_password_hash(password, method='sha256')
+        new_user = User(username=username, password=hashed_password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return jsonify({'message': 'User created successfully'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+    
 if __name__ == '__main__':
+    db.create_all()
     app.run(debug=True)
