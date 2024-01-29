@@ -16,6 +16,8 @@ import re
 from dotenv import load_dotenv
 import logging
 from logging.handlers import RotatingFileHandler
+import sys
+from io import StringIO
 
 load_dotenv()
 
@@ -79,16 +81,24 @@ def ask_question():
         txt=f'User {current_user} asked: {question}'
 
         app.logger.info(txt)
+        
 
         if contains_write_keywords(question):
             txt=f'User {current_user} attempted a query with write keywords: {question}'
             app.logger.warning(txt)
+            sys.stdout = original_stdout
             return jsonify({'error': 'Query contains write keywords'}), 400
         else:
+            original_stdout = sys.stdout
+            captured_output = StringIO()
+            sys.stdout = captured_output
             ans = agent_executor.run(question)
+            sys.stdout = original_stdout
+
+            captured_output_str = captured_output.getvalue()
             txt=f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
-            return jsonify({'user': current_user, 'answer': ans})
+            return jsonify({'user': current_user, 'answer': ans, 'console_output': captured_output_str})
     except Exception as e:
         app.logger.error(f'Error for user {current_user}: {str(e)}')
         return jsonify({'error': str(e)}), 500
@@ -159,6 +169,6 @@ if __name__ == '__main__':
         handler.setFormatter(formatter)
         app.logger.addHandler(handler)
         app.logger.setLevel(logging.DEBUG)
-        app.logger.info(f'Starting app...')
+        #app.logger.info(f'Starting app...')
 
     app.run(debug=False)

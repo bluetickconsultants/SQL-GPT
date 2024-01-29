@@ -22,3 +22,41 @@
 2024-01-29 13:34:43,600 - INFO - Starting app...
 2024-01-29 13:36:35,840 - INFO - Starting app...
 2024-01-29 13:38:24,940 - INFO - Starting app...
+2024-01-29 14:23:56,467 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-01-29 14:24:12,483 - INFO - User darshan received answer: The number of sales leads from each source are as follows:
+- Dealer: 26
+- Referral - Management: 12
+- Referral - Customer: 20
+- Broker: 25
+- Leasing Company: 11
+- Others: 215
+- Walk-in MBC: 208
+- Walk-in Prabhadevi Showroom: 672
+- Tele-in: 9
+- Trade-in: 51
+- Social Media: 2
+- Walk-in Metro Motors: 681
+- Online Portal: 7
+- Walk-in APC: 26
+- Event: 13
+- Walk-in Andheri Showroom: 581
+- Referral - Staff: 137
+2024-01-29 14:29:01,006 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-01-29 14:29:15,100 - INFO - User darshan received answer: The number of sales leads from each source are as follows:
+- Dealer: 26
+- Referral - Management: 12
+- Referral - Customer: 20
+- Broker: 25
+- Leasing Company: 11
+- Others: 215
+- Walk-in MBC: 208
+- Walk-in Prabhadevi Showroom: 672
+- Tele-in: 9
+- Trade-in: 51
+- Social Media: 2
+- Walk-in Metro Motors: 681
+- Online Portal: 7
+- Walk-in APC: 26
+- Event: 13
+- Walk-in Andheri Showroom: 581
+- Referral - Staff: 137
