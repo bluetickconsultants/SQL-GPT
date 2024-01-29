@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_migrate import Migrate, upgrade
 from langchain.agents import create_sql_agent
 from langchain.agents.agent_toolkits import SQLDatabaseToolkit
 from langchain.sql_database import SQLDatabase
@@ -25,6 +26,7 @@ app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a secret key for JWT
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -42,9 +44,8 @@ pg_uri = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{mydatabase
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0)
-#gpt_eval = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0)
-db = SQLDatabase.from_uri(pg_uri)
-toolkit = SQLDatabaseToolkit(db=db, llm=gpt)
+db_sql = SQLDatabase.from_uri(pg_uri)
+toolkit = SQLDatabaseToolkit(db=db_sql, llm=gpt)
 agent_executor = create_sql_agent(
     llm=gpt,
     toolkit=toolkit,
@@ -114,7 +115,11 @@ def create_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
-    
 if __name__ == '__main__':
-    db.create_all()
+    with app.app_context():
+        # Run the migrations
+        upgrade()
+
+        db.create_all()
+
     app.run(debug=True)
