@@ -14,6 +14,8 @@ from langchain.chat_models import ChatOpenAI
 import os
 import re
 from dotenv import load_dotenv
+import logging
+from logging.handlers import RotatingFileHandler
 
 load_dotenv()
 
@@ -27,6 +29,9 @@ app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a s
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+
+
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -70,15 +75,23 @@ def ask_question():
         current_user = get_jwt_identity()
         data = request.get_json()
         question = data['question']
+        
+        txt=f'User {current_user} asked: {question}'
+
+        app.logger.info(txt)
 
         if contains_write_keywords(question):
+            txt=f'User {current_user} attempted a query with write keywords: {question}'
+            app.logger.warning(txt)
             return jsonify({'error': 'Query contains write keywords'}), 400
         else:
             ans = agent_executor.run(question)
+            txt=f'User {current_user} received answer: {ans}'
+            app.logger.info(txt)
             return jsonify({'user': current_user, 'answer': ans})
     except Exception as e:
+        app.logger.error(f'Error for user {current_user}: {str(e)}')
         return jsonify({'error': str(e)}), 500
-
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -115,11 +128,37 @@ def create_user():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     
+from flask import Flask, request, jsonify
+
+@app.route('/get-logs/<username>', methods=['GET'])
+def get_user_logs(username):
+    try:
+        with open('app.log', 'r') as log_file:
+            logs = log_file.read()
+
+            log_entries = re.split(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} - ', logs)
+
+            user_logs = [log.strip() for log in log_entries if f'User {username}' in log]
+
+            return jsonify({'logs': user_logs})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    
 if __name__ == '__main__':
     with app.app_context():
         # Run the migrations
         upgrade()
 
         db.create_all()
+        
+        log_file_path = os.path.abspath('app.log')
+        handler = RotatingFileHandler(log_file_path, maxBytes=10000000, backupCount=1)
+        handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.DEBUG)
+        app.logger.info(f'Starting app...')
 
-    app.run(debug=True)
+    app.run(debug=False)
