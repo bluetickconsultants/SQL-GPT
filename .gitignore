@@ -1,6 +1,4 @@
 backend/.env
 backend/migrations/*
 backend/instance/*
-backend/examples.json
-backend/system_prefix.txt
 backend/app.log
