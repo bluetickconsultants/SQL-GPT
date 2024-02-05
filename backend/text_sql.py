@@ -20,6 +20,8 @@ from langchain_community.agent_toolkits import create_sql_agent
 from langchain_community.utilities import SQLDatabase
 from langchain.agents import AgentExecutor
 
+import json
+
 from langchain.chat_models import ChatOpenAI
 
 from langchain_core.prompts import (
@@ -64,125 +66,12 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
 #print(db_sql.dialect)
-print(db_sql.get_usable_table_names())
+#print(db_sql.get_usable_table_names())
 
-examples = [
-    {
-        "input": "Total number of test drives in January 2024:",
-        "query": """
-            SELECT COUNT(DISTINCT sales_lead) 
-            FROM sales_inventory_saleslog 
-            WHERE new_value IN ('Test Drive Completed', 'Delivery Given', 'Order Booked') 
-            AND EXTRACT(MONTH FROM created_date) = 1 
-            AND EXTRACT(YEAR FROM created_date) = 2024;
-        """,
-    },
-    {
-        "input": "Total number of leads in January 2024:",
-        "query": """
-            SELECT COUNT(*) 
-            FROM sales_inventory_saleslead 
-            WHERE EXTRACT(MONTH FROM created_date) = 1 
-            AND EXTRACT(YEAR FROM created_date) = 2024;
-        """,
-    },
-    {
-        "input": "Number of qualified leads by Amit Ashara in January 2024:",
-        "query": """
-            SELECT COUNT(*) 
-            FROM sales_inventory_saleslead 
-            WHERE status = 'Qualified' 
-            AND state = 'Open' 
-            AND assigned_to = 'Amit Ashara' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Number of all leads by Amit Ashara in January 2024:",
-        "query": """
-            SELECT COUNT(*) 
-            FROM sales_inventory_saleslead 
-            WHERE assigned_to = 'Amit Ashara' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Number of Yet to be contacted leads by Amit Ashara in January 2024:",
-        "query": """
-            SELECT COUNT(*) 
-            FROM sales_inventory_saleslead 
-            WHERE status = 'Yet to Contact' 
-            AND assigned_to = 'Amit Ashara' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Number of Test Drives leads by Amit Ashara in January 2024:",
-        "query": """
-            SELECT COUNT(*) 
-            FROM sales_inventory_saleslead 
-            WHERE status = 'Qualified' 
-            AND state = 'Open' 
-            AND assigned_to = 'Amit Ashara' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Number of Delivery Given leads by Amit Ashara in January 2024:",
-        "query": """
-            SELECT COUNT(DISTINCT sales_lead, new_value) 
-            FROM sales_inventory_saleslog 
-            WHERE new_value = 'Delivery Given' 
-            AND assigned_to = 'Amit Ashara' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Number of Bookings leads by Amit Ashara in January 2024:",
-        "query": """
-            SELECT COUNT(DISTINCT sales_lead) 
-            FROM sales_inventory_saleslog 
-            WHERE new_value = 'Order Booked' 
-            AND assigned_to = 'Amit Ashara' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Number of Delivery Given by Walk in in January 2024:",
-        "query": """
-            SELECT COUNT(DISTINCT sales_lead) 
-            FROM sales_inventory_saleslog 
-            WHERE new_value = 'Delivery Given' 
-            AND sales_lead_source = 'Walk-in' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-    {
-        "input": "Calculate Percentage of Conversion and Test drives done by Amit Ashara:",
-        "query": """
-            SELECT 
-                COUNT(*) AS total_leads,
-                ROUND((COUNT(DISTINCT CASE WHEN new_value IN 
-                    ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 
-                    'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') 
-                    THEN sales_lead END) / COUNT(*)) * 100, 2) AS test_drive_percentage,
-                ROUND((COUNT(DISTINCT CASE WHEN new_value IN 
-                    ('Delivery Given', 'Delivery Feedback Completed') THEN sales_lead END) / COUNT(*)) * 100, 2) AS conversion_percentage
-            FROM sales_inventory_saleslog 
-            WHERE sales_lead_assigned_to = 'Amit Ashara';
-        """,
-    },
-    {
-        "input": "Sales of Mercedes Benz A class count in January 2024:",
-        "query": """
-            SELECT COUNT(*) 
-            FROM sales_inventory_saleslead 
-            WHERE interested_in_model_name = 'Mercedes Benz' 
-            AND interested_in_make_name = 'A Class' 
-            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
-        """,
-    },
-]
+with open('examples.json', 'r') as examples_file:
+    examples_data = json.load(examples_file)
+    
+examples = examples_data['examples']
 
 example_selector = SemanticSimilarityExampleSelector.from_examples(
     examples,
@@ -201,6 +90,10 @@ def contains_write_keywords(text):
             return True 
 
     return False
+
+def load_system_prefix():
+    with open('system_prefix.txt', 'r') as file:
+        return file.read()
 
 @app.route('/ask', methods=['POST'])
 @jwt_required()
@@ -226,159 +119,7 @@ def ask_question():
             sys.stdout = captured_output
             
             
-            system_prefix = """You are an agent designed to interact with a SQL database.
-            Given an input question, create a syntactically correct {dialect} query to run, then look at the results of the query and return the answer.
-            Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most {top_k} results.
-            You can order the results by a relevant column to return the most interesting examples in the database.
-            Never query for all the columns from a specific table, only ask for the relevant columns given the question.
-            You have access to tools for interacting with the database.
-            Only use the given tools. Only use the information returned by the tools to construct your final answer.
-            You MUST double check your query before executing it. If you get an error while executing a query, rewrite the query and try again.
-            
-            There are sevral roles in the comapny. 
-            The roles are: Business Head
-                            Department Executive
-                            Sales Co-Ordinator
-                            Sales Executive
-                            Team Leader
-                            Sales Manager
-                            Account Executive
-                            Department Manager
-                            Agency
-                                        
-            The people in various roles are :
-                                    Business Head:
-                                    Mohan Mariwala
-                                    Suraj Sapaliga
-                                    Dheeraj Tadose
-                                    Abhishek Kamdar
-
-                                    Department Executive:
-                                    Aziz K
-                                    Manan Mehta
-                                    Dilip Panikar
-                                    Dinesh Mhaskar
-                                    Akshay Dangra
-                                    Shekar Bhaskar
-                                    Siddharth D'Souza (Evaluator)
-                                    Harsh Verma (Evaluator)
-                                    Jayesh Dalvi
-                                    Jay Bhosale (Evaluator)
-                                    Ajit Mohite
-                                    Shubham Chikhalkar
-
-                                    Sales Co-Ordinator:
-                                    Sonal Bhawsar
-                                    Valencia Crasto
-                                    Deepika Tiwari
-                                    Nikita Lokhande
-                                    Archit Jain
-
-                                    Sales Executive:
-                                    Pushkaraj Pisat
-                                    Aahad Siddiqui
-                                    Abhishek Rai
-                                    Avtar Dhanjal
-                                    Dikeshwar Sinha
-                                    Dilip Panikar (Sales)
-                                    Jayesh Dalvi (Sales)
-                                    Khushrooshaw Vania
-                                    Sanchit Sharma
-                                    Waseem Bajawala
-                                    Aziz K (Sales)
-                                    Manan Mehta (Sales)
-                                    Nadeem Shaikh (Sales)
-                                    Mirza Baig
-                                    Wasim Shaikh
-                                    Neeraj Mahamunkar
-                                    Sidhharth Dawande
-                                    Prasad Patil
-                                    Pratik Nade
-                                    Aman Singh
-                                    Pashin Bhadha
-                                    Vinayak Sane
-                                    Aejaz Khan
-                                    Gaurav Patil
-                                    Fahad Choudhary
-                                    Irshad Khatri
-                                    Niranjan Shaha
-                                    Ahmed Khan
-                                    Fasih Ullah
-                                    Siddharth D'Souza (SC)
-                                    Abhishek Upadhyay
-                                    Vinaymohan Sunil
-                                    Harsh Verma (SC)
-                                    Sagar Jagtap
-                                    Amit Ashara
-                                    Bhavin Mehta
-                                    Saurabh Pramod
-                                    Nilesh Ranaware
-                                    Irfan Shaikh
-                                    Divy Singh
-                                    Jay Bhosale (SC)
-                                    Nikhil Dubewad
-                                    Hitesh Yadav
-
-                                    Team Leader:
-                                    Sanchit Sharma (TL)
-                                    Khushroo V (TL)
-                                    Dikeshwar Sinha (TL)
-
-                                    Sales Manager:
-                                    Narendra Pai
-                                    Joel Gaware
-                                    Nadeem Shaikh (SM)
-
-                                    Account Executive:
-                                    Saraj Kathe
-
-                                    Department Manager:
-                                    Nadeem Shaikh (DM)
-                                    Aziz K (DM)
-                                    Sanket Muley
-
-                                    Agency:
-                                    Logicloop
-                                    
-            Also their are different lead stages in LMS.
-                Under Refurbishment
-                Delivery Taken
-                Payment Processed
-                Car Inward
-                Final Offer Given
-                Negotiations Ongoing
-                Technical Evaluation Complete
-                Initial Sales Offer
-                Sales Evaluation Complete
-                Evaluation Scheduled
-                Assigned
-                Unassigned
-            
-            There are different Lead Sources in LMS.
-                	Walk-in APC
-                    Walk-in MBC
-                    Walk-in Metro Motors
-                    Walk-in Andheri Showroom
-                    Trade-in
-                    Tele-in
-                    Walk-in Prabhadevi Showroom
-                    Event
-                    Others
-                    Print Ad
-                    Leasing Company
-                    Referral - Customer
-                    Referral - Staff
-                    Referral - Management
-                    Social Media
-                    Online Portal
-                    Dealer
-                    Broker
-
-            DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
-
-            If the question does not seem related to the database, just return "I don't know" as the answer.
-
-            Here are some examples of user inputs and their corresponding SQL queries:"""
+            system_prefix = load_system_prefix()
 
             few_shot_prompt = FewShotPromptTemplate(
                 example_selector=example_selector,
