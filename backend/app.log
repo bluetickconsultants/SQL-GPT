@@ -60,3 +60,71 @@
 - Event: 13
 - Walk-in Andheri Showroom: 581
 - Referral - Staff: 137
+2024-02-01 11:32:50,149 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 11:32:50,152 - ERROR - Error for user darshan: create_sql_agent() missing 1 required positional argument: 'toolkit'
+2024-02-01 11:41:07,338 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 11:41:07,344 - ERROR - Error for user darshan: cannot import name 'create_openai_functions_agent' from 'langchain.agents' (C:\Users\HP\anaconda3\envs\bluetick\lib\site-packages\langchain\agents\__init__.py)
+2024-02-01 11:46:06,606 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 11:46:06,608 - ERROR - Error for user darshan: cannot import name 'create_openai_functions_agent' from 'langchain.agents' (C:\Users\HP\anaconda3\envs\bluetick\lib\site-packages\langchain\agents\__init__.py)
+2024-02-01 11:48:30,044 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 11:48:31,429 - ERROR - Error for user darshan: 1 validation error for SQLDatabaseToolkit
+db
+  instance of SQLDatabase expected (type=type_error.arbitrary_type; expected_arbitrary_type=SQLDatabase)
+2024-02-01 11:51:02,328 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 11:51:02,329 - ERROR - Error for user darshan: 1 validation error for SQLDatabaseToolkit
+db
+  instance of SQLDatabase expected (type=type_error.arbitrary_type; expected_arbitrary_type=SQLDatabase)
+2024-02-01 11:52:39,266 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 11:52:40,648 - ERROR - Error for user darshan: 1 validation error for SQLDatabaseToolkit
+db
+  instance of SQLDatabase expected (type=type_error.arbitrary_type; expected_arbitrary_type=SQLDatabase)
+2024-02-01 12:15:49,804 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 12:15:51,304 - ERROR - Error for user darshan: 1 validation error for SQLDatabaseToolkit
+db
+  instance of SQLDatabase expected (type=type_error.arbitrary_type; expected_arbitrary_type=SQLDatabase)
+2024-02-01 12:24:15,525 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 12:24:18,273 - ERROR - Error for user darshan: 1 validation error for SQLDatabaseToolkit
+db
+  instance of SQLDatabase expected (type=type_error.arbitrary_type; expected_arbitrary_type=SQLDatabase)
+2024-02-01 12:24:46,779 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 12:24:46,781 - ERROR - Error for user darshan: 1 validation error for SQLDatabaseToolkit
+db
+  instance of SQLDatabase expected (type=type_error.arbitrary_type; expected_arbitrary_type=SQLDatabase)
+2024-02-01 12:26:11,849 - INFO - User darshan asked: How many sales leads do we have from each source?
+2024-02-01 12:26:26,499 - INFO - User darshan received answer: {'input': 'How many sales leads do we have from each source?', 'output': "I'm sorry, but I don't have access to the sales leads data. Therefore, I cannot provide you with the number of sales leads from each source."}
+2024-02-01 12:27:14,445 - INFO - User darshan asked: Retrieve sales lead funnel data
+2024-02-01 12:27:39,426 - ERROR - Error for user darshan: Error code: 400 - {'error': {'message': "This model's maximum context length is 4097 tokens. However, your messages resulted in 4118 tokens (3852 in the messages, 266 in the functions). Please reduce the length of the messages or functions.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}
+2024-02-01 12:28:20,379 - INFO - User darshan asked: Retrieve sales data for all sources.
+2024-02-01 12:28:37,934 - INFO - User darshan received answer: {'input': 'Retrieve sales data for all sources.', 'output': 'I apologize, but it seems that the database does not have a table or column named "source_name" in the "sales_inventory_saleslead" table. Therefore, I am unable to retrieve the sales data for all sources.'}
+2024-02-01 12:29:36,329 - INFO - User darshan asked: Retrieve lead count for each make and model.
+2024-02-01 12:29:50,295 - INFO - User darshan received answer: {'input': 'Retrieve lead count for each make and model.', 'output': 'I\'m sorry, but it seems that the table "lead_saleslead" does not exist in the database. Please make sure that the table name is correct and try again.'}
+2024-02-01 12:40:31,967 - INFO - User darshan asked: Sales Lead Funnel Analysis
+2024-02-01 12:40:54,173 - INFO - User darshan received answer: {'input': 'Sales Lead Funnel Analysis', 'output': 'I\'m sorry, but it seems that the table "SalesLead" does not exist in the database. Please make sure that the table name is correct and try again.'}
+2024-02-01 12:42:40,064 - INFO - User darshan asked: Retrieve procurement lead funnel data.
+2024-02-01 12:43:00,072 - INFO - User darshan received answer: {'input': 'Retrieve procurement lead funnel data.', 'output': "I'm sorry, but there seems to be a syntax error in the query. Let me correct it for you:\n\n```sql\nSELECT 'Procurement Leads' AS name, \n    ARRAY[\n        ['Total', COUNT(*)], \n        ['Qualified', COUNT(DISTINCT CASE WHEN lead_status = 'Qualified' THEN lead_id END)], \n        ['Evaluations Done', COUNT(DISTINCT CASE WHEN new_value = 'Sales Evaluation Complete' THEN lead_id END)], \n        ['Delivery Taken', COUNT(DISTINCT CASE WHEN new_value = 'Car Inward' THEN lead_id END)]\n    ] AS data \nFROM lead_lead \nLEFT JOIN lead_log ON lead_lead.id = lead_log.lead_id \nWHERE (lead_lead.created_at >= start_date AND lead_lead.created_at <= end_date) \n    AND (lead_log.created_at >= start_date AND lead_log.created_at <= end_date) \n    AND (lead_lead.source_name = source_name OR source_name IS NULL) \n    AND (lead_lead.assigned_to_id = assigned_to_id OR assigned_to_id IS NULL)\n```\n\nPlease note that you need to replace `start_date`, `end_date`, `source_name`, and `assigned_to_id` with the actual values you want to use in the query."}
+2024-02-02 11:52:27,964 - INFO - User darshan asked: Sales of Merceded Benz A class count in January 2024.
+2024-02-02 11:53:07,173 - ERROR - Error for user darshan: An output parsing error occurred. In order to pass this error back to the agent and have it try again, pass `handle_parsing_errors=True` to the AgentExecutor. This is the error: Could not parse tool input: {'arguments': '{\n  "__arg1', 'name': 'sql_db_query'} because the `arguments` is not valid JSON.
+2024-02-02 12:03:06,640 - INFO - User darshan asked: Sales of Merceded Benz A class count in January 2024.
+2024-02-02 12:03:07,453 - ERROR - Error for user darshan: name 'tools' is not defined
+2024-02-02 12:05:37,258 - INFO - User darshan asked: Sales of Merceded Benz A class count in January 2024.
+2024-02-02 12:05:37,936 - ERROR - Error for user darshan: 'tools'
+2024-02-02 12:08:22,525 - INFO - User darshan asked: Sales of Merceded Benz A class count in January 2024.
+2024-02-02 12:08:58,397 - ERROR - Error for user darshan: An output parsing error occurred. In order to pass this error back to the agent and have it try again, pass `handle_parsing_errors=True` to the AgentExecutor. This is the error: Could not parse tool input: {'arguments': '{\n  "__arg1', 'name': 'sql_db_query'} because the `arguments` is not valid JSON.
+2024-02-02 12:29:33,051 - INFO - User darshan asked: Sales of Merceded Benz A class count in January 2024.
+2024-02-02 12:30:05,069 - ERROR - Error for user darshan: Error code: 400 - {'error': {'message': "This model's maximum context length is 4097 tokens. However, your messages resulted in 4143 tokens (3877 in the messages, 266 in the functions). Please reduce the length of the messages or functions.", 'type': 'invalid_request_error', 'param': 'messages', 'code': 'context_length_exceeded'}}
+2024-02-02 12:31:16,642 - INFO - User darshan asked: Percentage of Conversion and Test drives done by Amit Ashara.
+2024-02-02 12:31:22,959 - INFO - User darshan received answer: {'input': 'Percentage of Conversion and Test drives done by Amit Ashara.', 'output': 'I\'m sorry, but I couldn\'t find the table "SalesLead" in the database. Please make sure the table exists and try again.'}
+2024-02-02 12:31:54,819 - INFO - User darshan asked: Number of Delivery Given leads by Amit Ashara in Jan 2024.
+2024-02-02 12:32:14,711 - INFO - User darshan received answer: {'input': 'Number of Delivery Given leads by Amit Ashara in Jan 2024.', 'output': 'There were no Delivery Given leads by Amit Ashara in January 2024.'}
+2024-02-02 12:33:26,372 - INFO - User darshan asked: Number of Yet to be contacted leads by Amit Ashara in Jan 2024.
+2024-02-02 12:33:57,900 - INFO - User darshan received answer: {'input': 'Number of Yet to be contacted leads by Amit Ashara in Jan 2024.', 'output': "I'm sorry, but I couldn't retrieve the number of Yet to be contacted leads by Amit Ashara in Jan 2024."}
+2024-02-02 12:40:23,569 - INFO - User darshan asked: Number of Delivery Given by Walk in in January 2024:
+2024-02-02 12:40:47,888 - INFO - User darshan received answer: {'input': 'Number of Delivery Given by Walk in in January 2024:', 'output': 'The number of Delivery Given leads by Walk-in in January 2024 is 5.'}
+2024-02-02 12:41:27,138 - INFO - User darshan asked: Number of Yet to be contacted leads by Amit Ashara in January 2024:
+2024-02-02 12:41:34,843 - INFO - User darshan received answer: {'input': 'Number of Yet to be contacted leads by Amit Ashara in January 2024:', 'output': 'The number of Yet to be contacted leads by Amit Ashara in January 2024 is 0.'}
+2024-02-02 14:18:10,718 - INFO - User darshan asked: Number of Yet to be contacted leads by Amit Ashara in January 2024:
+2024-02-02 14:18:20,062 - INFO - User darshan received answer: {'input': 'Number of Yet to be contacted leads by Amit Ashara in January 2024:', 'output': 'The number of Yet to be contacted leads by Amit Ashara in January 2024 is 0.'}
+2024-02-02 14:18:33,405 - INFO - User darshan asked: Number of Delivery Given by Walk in in January 2024:
+2024-02-02 14:18:56,761 - INFO - User darshan received answer: {'input': 'Number of Delivery Given by Walk in in January 2024:', 'output': 'The number of Delivery Given leads by Walk-in in January 2024 is 5.'}
+2024-02-02 14:19:30,756 - INFO - User darshan asked: Number of Delivery Given by Walk in in December 202:
+2024-02-02 14:19:50,187 - INFO - User darshan received answer: {'input': 'Number of Delivery Given by Walk in in December 202:', 'output': 'The number of Delivery Given leads by Walk-in in December 2022 is 15.'}

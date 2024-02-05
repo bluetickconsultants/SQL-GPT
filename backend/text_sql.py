@@ -4,13 +4,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_migrate import Migrate, upgrade
-from langchain.agents import create_sql_agent
-from langchain.agents.agent_toolkits import SQLDatabaseToolkit
-from langchain.sql_database import SQLDatabase
-from langchain.llms.openai import OpenAI
-from langchain.agents import AgentExecutor
-from langchain.agents.agent_types import AgentType
-from langchain.chat_models import ChatOpenAI
+
 import os
 import re
 from dotenv import load_dotenv
@@ -18,6 +12,25 @@ import logging
 from logging.handlers import RotatingFileHandler
 import sys
 from io import StringIO
+
+from langchain_community.vectorstores import FAISS
+from langchain_core.example_selectors import SemanticSimilarityExampleSelector
+from langchain_openai import OpenAIEmbeddings
+from langchain_community.agent_toolkits import create_sql_agent
+from langchain_community.utilities import SQLDatabase
+from langchain.agents import AgentExecutor
+
+from langchain.chat_models import ChatOpenAI
+
+from langchain_core.prompts import (
+    ChatPromptTemplate,
+    FewShotPromptTemplate,
+    MessagesPlaceholder,
+    PromptTemplate,
+    SystemMessagePromptTemplate,
+)
+
+
 
 load_dotenv()
 
@@ -31,8 +44,6 @@ app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a s
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-
-
 
 
 class User(db.Model):
@@ -52,14 +63,135 @@ os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
-toolkit = SQLDatabaseToolkit(db=db_sql, llm=gpt)
-agent_executor = create_sql_agent(
-    llm=gpt,
-    toolkit=toolkit,
-    verbose=True,
-    agent_type=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
-)
+#print(db_sql.dialect)
+print(db_sql.get_usable_table_names())
 
+examples = [
+    {
+        "input": "Total number of test drives in January 2024:",
+        "query": """
+            SELECT COUNT(DISTINCT sales_lead) 
+            FROM sales_inventory_saleslog 
+            WHERE new_value IN ('Test Drive Completed', 'Delivery Given', 'Order Booked') 
+            AND EXTRACT(MONTH FROM created_date) = 1 
+            AND EXTRACT(YEAR FROM created_date) = 2024;
+        """,
+    },
+    {
+        "input": "Total number of leads in January 2024:",
+        "query": """
+            SELECT COUNT(*) 
+            FROM sales_inventory_saleslead 
+            WHERE EXTRACT(MONTH FROM created_date) = 1 
+            AND EXTRACT(YEAR FROM created_date) = 2024;
+        """,
+    },
+    {
+        "input": "Number of qualified leads by Amit Ashara in January 2024:",
+        "query": """
+            SELECT COUNT(*) 
+            FROM sales_inventory_saleslead 
+            WHERE status = 'Qualified' 
+            AND state = 'Open' 
+            AND assigned_to = 'Amit Ashara' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Number of all leads by Amit Ashara in January 2024:",
+        "query": """
+            SELECT COUNT(*) 
+            FROM sales_inventory_saleslead 
+            WHERE assigned_to = 'Amit Ashara' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Number of Yet to be contacted leads by Amit Ashara in January 2024:",
+        "query": """
+            SELECT COUNT(*) 
+            FROM sales_inventory_saleslead 
+            WHERE status = 'Yet to Contact' 
+            AND assigned_to = 'Amit Ashara' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Number of Test Drives leads by Amit Ashara in January 2024:",
+        "query": """
+            SELECT COUNT(*) 
+            FROM sales_inventory_saleslead 
+            WHERE status = 'Qualified' 
+            AND state = 'Open' 
+            AND assigned_to = 'Amit Ashara' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Number of Delivery Given leads by Amit Ashara in January 2024:",
+        "query": """
+            SELECT COUNT(DISTINCT sales_lead, new_value) 
+            FROM sales_inventory_saleslog 
+            WHERE new_value = 'Delivery Given' 
+            AND assigned_to = 'Amit Ashara' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Number of Bookings leads by Amit Ashara in January 2024:",
+        "query": """
+            SELECT COUNT(DISTINCT sales_lead) 
+            FROM sales_inventory_saleslog 
+            WHERE new_value = 'Order Booked' 
+            AND assigned_to = 'Amit Ashara' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Number of Delivery Given by Walk in in January 2024:",
+        "query": """
+            SELECT COUNT(DISTINCT sales_lead) 
+            FROM sales_inventory_saleslog 
+            WHERE new_value = 'Delivery Given' 
+            AND sales_lead_source = 'Walk-in' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+    {
+        "input": "Calculate Percentage of Conversion and Test drives done by Amit Ashara:",
+        "query": """
+            SELECT 
+                COUNT(*) AS total_leads,
+                ROUND((COUNT(DISTINCT CASE WHEN new_value IN 
+                    ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 
+                    'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') 
+                    THEN sales_lead END) / COUNT(*)) * 100, 2) AS test_drive_percentage,
+                ROUND((COUNT(DISTINCT CASE WHEN new_value IN 
+                    ('Delivery Given', 'Delivery Feedback Completed') THEN sales_lead END) / COUNT(*)) * 100, 2) AS conversion_percentage
+            FROM sales_inventory_saleslog 
+            WHERE sales_lead_assigned_to = 'Amit Ashara';
+        """,
+    },
+    {
+        "input": "Sales of Mercedes Benz A class count in January 2024:",
+        "query": """
+            SELECT COUNT(*) 
+            FROM sales_inventory_saleslead 
+            WHERE interested_in_model_name = 'Mercedes Benz' 
+            AND interested_in_make_name = 'A Class' 
+            AND created_date BETWEEN '2024-01-01' AND '2024-01-31';
+        """,
+    },
+]
+
+example_selector = SemanticSimilarityExampleSelector.from_examples(
+    examples,
+    OpenAIEmbeddings(),
+    FAISS,
+    k=5,
+    input_keys=["input"],
+)
+print(example_selector)
 def contains_write_keywords(text):
     write_keywords = ['UPDATE', 'INSERT', 'DELETE', 'ALTER', 'CREATE', 'DROP', 'TRUNCATE', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'MERGE']
     text_upper = text.upper()
@@ -92,7 +224,190 @@ def ask_question():
             original_stdout = sys.stdout
             captured_output = StringIO()
             sys.stdout = captured_output
-            ans = agent_executor.run(question)
+            
+            
+            system_prefix = """You are an agent designed to interact with a SQL database.
+            Given an input question, create a syntactically correct {dialect} query to run, then look at the results of the query and return the answer.
+            Unless the user specifies a specific number of examples they wish to obtain, always limit your query to at most {top_k} results.
+            You can order the results by a relevant column to return the most interesting examples in the database.
+            Never query for all the columns from a specific table, only ask for the relevant columns given the question.
+            You have access to tools for interacting with the database.
+            Only use the given tools. Only use the information returned by the tools to construct your final answer.
+            You MUST double check your query before executing it. If you get an error while executing a query, rewrite the query and try again.
+            
+            There are sevral roles in the comapny. 
+            The roles are: Business Head
+                            Department Executive
+                            Sales Co-Ordinator
+                            Sales Executive
+                            Team Leader
+                            Sales Manager
+                            Account Executive
+                            Department Manager
+                            Agency
+                                        
+            The people in various roles are :
+                                    Business Head:
+                                    Mohan Mariwala
+                                    Suraj Sapaliga
+                                    Dheeraj Tadose
+                                    Abhishek Kamdar
+
+                                    Department Executive:
+                                    Aziz K
+                                    Manan Mehta
+                                    Dilip Panikar
+                                    Dinesh Mhaskar
+                                    Akshay Dangra
+                                    Shekar Bhaskar
+                                    Siddharth D'Souza (Evaluator)
+                                    Harsh Verma (Evaluator)
+                                    Jayesh Dalvi
+                                    Jay Bhosale (Evaluator)
+                                    Ajit Mohite
+                                    Shubham Chikhalkar
+
+                                    Sales Co-Ordinator:
+                                    Sonal Bhawsar
+                                    Valencia Crasto
+                                    Deepika Tiwari
+                                    Nikita Lokhande
+                                    Archit Jain
+
+                                    Sales Executive:
+                                    Pushkaraj Pisat
+                                    Aahad Siddiqui
+                                    Abhishek Rai
+                                    Avtar Dhanjal
+                                    Dikeshwar Sinha
+                                    Dilip Panikar (Sales)
+                                    Jayesh Dalvi (Sales)
+                                    Khushrooshaw Vania
+                                    Sanchit Sharma
+                                    Waseem Bajawala
+                                    Aziz K (Sales)
+                                    Manan Mehta (Sales)
+                                    Nadeem Shaikh (Sales)
+                                    Mirza Baig
+                                    Wasim Shaikh
+                                    Neeraj Mahamunkar
+                                    Sidhharth Dawande
+                                    Prasad Patil
+                                    Pratik Nade
+                                    Aman Singh
+                                    Pashin Bhadha
+                                    Vinayak Sane
+                                    Aejaz Khan
+                                    Gaurav Patil
+                                    Fahad Choudhary
+                                    Irshad Khatri
+                                    Niranjan Shaha
+                                    Ahmed Khan
+                                    Fasih Ullah
+                                    Siddharth D'Souza (SC)
+                                    Abhishek Upadhyay
+                                    Vinaymohan Sunil
+                                    Harsh Verma (SC)
+                                    Sagar Jagtap
+                                    Amit Ashara
+                                    Bhavin Mehta
+                                    Saurabh Pramod
+                                    Nilesh Ranaware
+                                    Irfan Shaikh
+                                    Divy Singh
+                                    Jay Bhosale (SC)
+                                    Nikhil Dubewad
+                                    Hitesh Yadav
+
+                                    Team Leader:
+                                    Sanchit Sharma (TL)
+                                    Khushroo V (TL)
+                                    Dikeshwar Sinha (TL)
+
+                                    Sales Manager:
+                                    Narendra Pai
+                                    Joel Gaware
+                                    Nadeem Shaikh (SM)
+
+                                    Account Executive:
+                                    Saraj Kathe
+
+                                    Department Manager:
+                                    Nadeem Shaikh (DM)
+                                    Aziz K (DM)
+                                    Sanket Muley
+
+                                    Agency:
+                                    Logicloop
+                                    
+            Also their are different lead stages in LMS.
+                Under Refurbishment
+                Delivery Taken
+                Payment Processed
+                Car Inward
+                Final Offer Given
+                Negotiations Ongoing
+                Technical Evaluation Complete
+                Initial Sales Offer
+                Sales Evaluation Complete
+                Evaluation Scheduled
+                Assigned
+                Unassigned
+            
+            There are different Lead Sources in LMS.
+                	Walk-in APC
+                    Walk-in MBC
+                    Walk-in Metro Motors
+                    Walk-in Andheri Showroom
+                    Trade-in
+                    Tele-in
+                    Walk-in Prabhadevi Showroom
+                    Event
+                    Others
+                    Print Ad
+                    Leasing Company
+                    Referral - Customer
+                    Referral - Staff
+                    Referral - Management
+                    Social Media
+                    Online Portal
+                    Dealer
+                    Broker
+
+            DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
+
+            If the question does not seem related to the database, just return "I don't know" as the answer.
+
+            Here are some examples of user inputs and their corresponding SQL queries:"""
+
+            few_shot_prompt = FewShotPromptTemplate(
+                example_selector=example_selector,
+                example_prompt=PromptTemplate.from_template(
+                    "User input: {input}\nSQL query: {query}"
+                ),
+                input_variables=["input", "dialect", "top_k"],
+                prefix=system_prefix,
+                suffix="",
+            )
+
+            full_prompt = ChatPromptTemplate.from_messages(
+                [
+                    SystemMessagePromptTemplate(prompt=few_shot_prompt),
+                    ("human", "{input}"),
+                    MessagesPlaceholder("agent_scratchpad"),
+                ]
+            )
+            print("done")
+            agent = create_sql_agent(
+            llm=gpt,
+            db=db_sql,
+            prompt=full_prompt,
+            verbose=True,
+            agent_type="openai-tools",
+            agent_executor_kwargs={"handle_parsing_errors": True}
+            )
+            print("done")
+            ans = agent.invoke({"input": f"{question}"})
             sys.stdout = original_stdout
 
             captured_output_str = captured_output.getvalue()
