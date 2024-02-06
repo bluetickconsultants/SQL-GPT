@@ -2,3 +2,5 @@ backend/.env
 backend/migrations/*
 backend/instance/*
 backend/app.log
+backend/venv/*
+backend/venv/

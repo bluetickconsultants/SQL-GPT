@@ -33,7 +33,6 @@ from langchain_core.prompts import (
 )
 
 
-
 load_dotenv()
 
 app = Flask(__name__)
@@ -42,7 +41,8 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
-app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a secret key for JWT
+app.config['JWT_SECRET_KEY'] = os.getenv(
+    "JWT_SECRET_KEY")  # Change this to a secret key for JWT
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -52,6 +52,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+
 
 # LangChain configuration
 username = os.getenv("POSTGRES_USERNAME")
@@ -63,14 +64,15 @@ pg_uri = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{mydatabase
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY, model="gpt-3.5-turbo", temperature=0)
+gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY,
+                 model="gpt-3.5-turbo", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
-#print(db_sql.dialect)
-#print(db_sql.get_usable_table_names())
+# print(db_sql.dialect)
+# print(db_sql.get_usable_table_names())
 
 with open('examples.json', 'r') as examples_file:
     examples_data = json.load(examples_file)
-    
+
 examples = examples_data['examples']
 
 example_selector = SemanticSimilarityExampleSelector.from_examples(
@@ -81,19 +83,24 @@ example_selector = SemanticSimilarityExampleSelector.from_examples(
     input_keys=["input"],
 )
 print(example_selector)
+
+
 def contains_write_keywords(text):
-    write_keywords = ['UPDATE', 'INSERT', 'DELETE', 'ALTER', 'CREATE', 'DROP', 'TRUNCATE', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'MERGE']
+    write_keywords = ['UPDATE', 'INSERT', 'DELETE', 'ALTER', 'CREATE',
+                      'DROP', 'TRUNCATE', 'GRANT', 'REVOKE', 'COMMIT', 'ROLLBACK', 'MERGE']
     text_upper = text.upper()
 
     for keyword in write_keywords:
         if re.search(rf'\b{re.escape(keyword)}\b', text_upper):
-            return True 
+            return True
 
     return False
+
 
 def load_system_prefix():
     with open('system_prefix.txt', 'r') as file:
         return file.read()
+
 
 @app.route('/ask', methods=['POST'])
 @jwt_required()
@@ -102,14 +109,13 @@ def ask_question():
         current_user = get_jwt_identity()
         data = request.get_json()
         question = data['question']
-        
-        txt=f'User {current_user} asked: {question}'
+
+        txt = f'User {current_user} asked: {question}'
 
         app.logger.info(txt)
-        
 
         if contains_write_keywords(question):
-            txt=f'User {current_user} attempted a query with write keywords: {question}'
+            txt = f'User {current_user} attempted a query with write keywords: {question}'
             app.logger.warning(txt)
             sys.stdout = original_stdout
             return jsonify({'error': 'Query contains write keywords'}), 400
@@ -117,8 +123,7 @@ def ask_question():
             original_stdout = sys.stdout
             captured_output = StringIO()
             sys.stdout = captured_output
-            
-            
+
             system_prefix = load_system_prefix()
 
             few_shot_prompt = FewShotPromptTemplate(
@@ -140,24 +145,25 @@ def ask_question():
             )
             print("done")
             agent = create_sql_agent(
-            llm=gpt,
-            db=db_sql,
-            prompt=full_prompt,
-            verbose=True,
-            agent_type="openai-tools",
-            agent_executor_kwargs={"handle_parsing_errors": True}
+                llm=gpt,
+                db=db_sql,
+                prompt=full_prompt,
+                verbose=True,
+                agent_type="openai-tools",
+                agent_executor_kwargs={"handle_parsing_errors": True}
             )
             print("done")
             ans = agent.invoke({"input": f"{question}"})
             sys.stdout = original_stdout
 
             captured_output_str = captured_output.getvalue()
-            txt=f'User {current_user} received answer: {ans}'
+            txt = f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
             return jsonify({'user': current_user, 'answer': ans, 'console_output': captured_output_str})
     except Exception as e:
         app.logger.error(f'Error for user {current_user}: {str(e)}')
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -175,6 +181,7 @@ def login():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 @app.route('/create-user', methods=['POST'])
 def create_user():
     try:
@@ -185,7 +192,8 @@ def create_user():
         if User.query.filter_by(username=username).first():
             return jsonify({'error': 'Username already exists'}), 400
 
-        hashed_password = generate_password_hash(password, method='sha256')
+        hashed_password = generate_password_hash(
+            password, method='pbkdf2:sha256')
         new_user = User(username=username, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
@@ -193,8 +201,7 @@ def create_user():
         return jsonify({'message': 'User created successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-from flask import Flask, request, jsonify
+
 
 @app.route('/get-logs/<username>', methods=['GET'])
 def get_user_logs(username):
@@ -202,29 +209,33 @@ def get_user_logs(username):
         with open('app.log', 'r') as log_file:
             logs = log_file.read()
 
-            log_entries = re.split(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} - ', logs)
+            log_entries = re.split(
+                r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} - ', logs)
 
-            user_logs = [log.strip() for log in log_entries if f'User {username}' in log]
+            user_logs = [log.strip()
+                         for log in log_entries if f'User {username}' in log]
 
             return jsonify({'logs': user_logs})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-    
+
 if __name__ == '__main__':
     with app.app_context():
         # Run the migrations
         upgrade()
 
         db.create_all()
-        
+
         log_file_path = os.path.abspath('app.log')
-        handler = RotatingFileHandler(log_file_path, maxBytes=10000000, backupCount=1)
+        handler = RotatingFileHandler(
+            log_file_path, maxBytes=10000000, backupCount=1)
         handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s')
         handler.setFormatter(formatter)
         app.logger.addHandler(handler)
         app.logger.setLevel(logging.DEBUG)
-        #app.logger.info(f'Starting app...')
+        # app.logger.info(f'Starting app...')
 
     app.run(debug=False)
