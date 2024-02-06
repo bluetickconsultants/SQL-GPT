@@ -2,18 +2,35 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
+
 const Chat = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [apiResponse, setApiResponse] = useState<string>('');
     const [inputMessage, setInputMessage] = useState<string>('');
     const [messages, setMessages] = useState<Array<{ type: string; text: string }>>([]);
-    const [runapi, setRunapi] = useState(0)
+    const [runapi, setRunapi] = useState(0);
     const [log, setLog] = useState<Array<any>>([]);
-
     const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [showPredefinedQuestions, setShowPredefinedQuestions] = useState<boolean>(true);
+
+    const predefinedQuestions = [
+        "Total number of test drives in Jan 2024",
+        "Total number of leads in Jan 2024",
+        "Total Number of leads by Amit Ashara in Jan 2024",
+        "Number of Test Drives leads by Amit Ashara in Jan 2024",
+        "Count of Sales of Mercedes Benz A class in January 2024",
+        "Number of Delivery Given by Walk in in Jan 2024",
+    ];
+
+    const handlePredefinedQuestionClick = (question: string) => {
+        setInputMessage(`${question}`);
+        handleSendMessage(question);
+        setShowPredefinedQuestions(false);
+    };
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
+        setShowPredefinedQuestions(true); // Show predefined questions when menu is toggled
     };
 
     const closeMenu = (e: React.MouseEvent) => {
@@ -39,10 +56,7 @@ const Chat = () => {
             }
         };
 
-
-
         fetchLogs();
-
     }, [runapi]);
 
     const makeApiCall = async (question: string) => {
@@ -64,16 +78,16 @@ const Chat = () => {
 
             // Simulate delay for loader visibility
             setTimeout(() => {
-                setApiResponse(response.data?.answer);
+                setApiResponse(response.data?.answer?.output);
 
                 // Add API response to the UI
-                const newMessage = { type: 'incoming', text: `${response.data?.answer}` };
+                const newMessage = { type: 'incoming', text: `${response.data?.answer?.output}` };
                 setMessages((prevMessages) => [...prevMessages, newMessage]);
                 setApiResponse('');
                 setIsLoading(false);
 
             }, 1000);
-            setRunapi(()=>runapi+1)
+            setRunapi(() => runapi + 1)
         } catch (error) {
             console.error('API Error:', error);
             setIsLoading(false);
@@ -81,13 +95,10 @@ const Chat = () => {
         }
     };
 
-
-
-
-    const handleSendMessage = () => {
-        const newMessage = { type: 'outgoing', text: inputMessage };
+    const handleSendMessage = (question: string) => {
+        const newMessage = { type: 'outgoing', text: `${question}` };
         setMessages((prevMessages) => [...prevMessages, newMessage]);
-        makeApiCall(inputMessage);
+        makeApiCall(question);
         setInputMessage('');
     };
 
@@ -98,19 +109,14 @@ const Chat = () => {
                 {/* Sidebar Header */}
                 <header className="p-4 border-b border-gray-300 flex justify-between items-center bg-[#6f1d62] text-white">
                     <h1 className="text-2xl font-semibold">Logs</h1>
-
                 </header>
                 <div className='h-screen overflow-y-auto p-4 pb-[20rem]'>
-                    {
-                        log?.map((i: any) => {
-                            return <div>
-                                <p className='pb-[1rem]'>{i}</p>
-                            </div>
-                        })
-                    }
+                    {log?.map((i: any, index: number) => (
+                        <div key={index}>
+                            <p className='pb-[1rem]'>{i}</p>
+                        </div>
+                    ))}
                 </div>
-
-
             </div>
 
             {/* Main Chat Area */}
@@ -128,19 +134,19 @@ const Chat = () => {
                     {messages.map((message, index) => (
                         <div
                             key={index}
-                            className={`flex mb-4 cursor-pointer justify-${message.type === 'outgoing' ? 'end' : 'start'}`}
+                            className={`flex mb-4 items-center cursor-pointer justify-${message.type === 'outgoing' ? 'end' : 'start'}`}
                         >
                             <div className={`w-9 h-9 rounded-full flex items-center justify-center ${message.type === 'outgoing' ? 'ml-2' : 'mr-2'}`}>
                                 <img
-                                    src={message.type === 'outgoing' ?"./autohangar.svg":"./vite.svg"}
+                                    src={message.type === 'outgoing' ? "./autohangar.svg" : "./vite.svg"}
                                     alt={message.type === 'outgoing' ? 'My Avatar' : 'User Avatar'}
-                                    className="w-8 h-8 rounded-full"
+                                    className="w-15 h-15 rounded-full"
                                 />
                             </div>
                             <div
                                 className={`flex max-w-96 bg-${message.type === 'outgoing' ? '#bb44b1' : 'bb44b1'} text-${message.type === 'outgoing' ? 'gray-700' : 'gray-700'} rounded-lg p-3 gap-3`}
                             >
-                                <p>{message.text}</p>
+                                <p className={`flex max-w-96 bg-${message.type === 'outgoing' ? 'white' : '[#bb44b1]'} text-${message.type === 'outgoing' ? 'black' : 'white'} rounded-lg p-3 gap-3 text-[1.25rem]`}>{message.text}</p>
                             </div>
                         </div>
                     ))}
@@ -161,7 +167,18 @@ const Chat = () => {
                         </div>
                     )}
 
-                    {/* ... (rest of the messages) */}
+                    {showPredefinedQuestions && (
+                        // Display predefined questions only if showPredefinedQuestions is true
+                        predefinedQuestions.map((question, index) => (
+                            <div
+                                key={index}
+                                className="cursor-pointer border border-purple-300 w-[30rem] rounded-lg bg-[#bb44b1]  mb-[1rem] flex flex-col gap-[1rem] items-center"
+                                onClick={() => handlePredefinedQuestionClick(question)}
+                            >
+                                <p className='p-[1rem] text-white'>{`${question}`}</p>
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Chat Input */}
@@ -175,7 +192,7 @@ const Chat = () => {
                             className="w-full p-2 rounded-md border border-gray-400 focus:outline-none focus:border-[#bb44b1]"
                         />
                         <button
-                            onClick={handleSendMessage}
+                            onClick={() => handleSendMessage(inputMessage)}
                             className="bg-[#6f1d62] text-white px-4 py-2 rounded-md ml-2"
                         >
                             Send
