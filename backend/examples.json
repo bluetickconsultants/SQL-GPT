@@ -1,49 +1,50 @@
 {
     "examples": [
       {
-        "input": "Total number of test drives in January 2024:",
+        "input": "Total number of test drives in January 2024",
         "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value IN ('Test Drive Completed', 'Delivery Given', 'Order Booked') AND EXTRACT(MONTH FROM created_date) = 1 AND EXTRACT(YEAR FROM created_date) = 2024;"
       },
       {
-        "input": "Total number of leads in January 2024:",
+        "input": "Total number of leads in January 2024",
         "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE EXTRACT(MONTH FROM created_date) = 1 AND EXTRACT(YEAR FROM created_date) = 2024;"
       },
       {
-        "input": "Number of qualified leads by Amit Ashara in January 2024:",
-        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to = 'Amit Ashara' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of qualified leads by Amit Ashara in January 2024",
+        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to = 'Amit Ashara' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Number of all leads by Amit Ashara in January 2024:",
-        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = 'Amit Ashara' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of all leads by Amit Ashara in January 2024",
+        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = 'Amit Ashara' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Number of Yet to be contacted leads by Amit Ashara in January 2024:",
-        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Yet to Contact' AND assigned_to = 'Amit Ashara' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of Yet to be contacted leads by Amit Ashara in January 2024",
+        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Yet to Contact' AND assigned_to = 'Amit Ashara' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Number of Test Drives leads by Amit Ashara in January 2024:",
-        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to = 'Amit Ashara' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of Test Drives leads by Amit Ashara in January 2024",
+        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to = 'Amit Ashara' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Number of Delivery Given leads by Amit Ashara in January 2024:",
-        "query": "SELECT COUNT(DISTINCT sales_lead, new_value) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND assigned_to = 'Amit Ashara' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of Delivery Given leads by Amit Ashara in January 2024",
+        "query": "SELECT COUNT(DISTINCT sales_lead, new_value) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND assigned_to = 'Amit Ashara' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Number of Bookings leads by Amit Ashara in January 2024:",
-        "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value = 'Order Booked' AND assigned_to = 'Amit Ashara' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of Bookings leads by Amit Ashara in January 2024",
+        "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value = 'Order Booked' AND assigned_to = 'Amit Ashara' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Number of Delivery Given by Walk in in January 2024:",
-        "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND sales_lead_source = 'Walk-in' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Number of Delivery Given by Walk-in in January 2024",
+        "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND sales_lead_source = 'Walk-in' AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       },
       {
-        "input": "Calculate Percentage of Conversion and Test drives done by Amit Ashara:",
-        "query": "SELECT COUNT(*) AS total_leads, ROUND((COUNT(DISTINCT CASE WHEN new_value IN ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') THEN sales_lead END) / COUNT(*)) * 100, 2) AS test_drive_percentage, ROUND((COUNT(DISTINCT CASE WHEN new_value IN ('Delivery Given', 'Delivery Feedback Completed') THEN sales_lead END) / COUNT(*)) * 100, 2) AS conversion_percentage FROM sales_inventory_saleslog WHERE sales_lead_assigned_to = 'Amit Ashara';"
+        "input": "Percentage of Conversion and Test drives done by Amit Ashara",
+        "query": "SELECT (SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = 'Amit Ashara') AS total_leads, ROUND((SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value IN ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') AND assigned_to = 'Amit Ashara') * 100.0 / (SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = 'Amit Ashara'), 2) AS test_drive_percentage, ROUND((SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value IN ('Delivery Given', 'Delivery Feedback Completed') AND assigned_to = 'Amit Ashara') * 100.0 / (SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = 'Amit Ashara'), 2) AS conversion_percentage;"
       },
       {
-        "input": "Sales of Mercedes Benz A class count in January 2024:",
-        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE interested_in_model_name = 'Mercedes Benz' AND interested_in_make_name = 'A Class' AND created_date BETWEEN '2024-01-01' AND '2024-01-31';"
+        "input": "Sales of Mercedes Benz A-Class in January 2024",
+        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE interested_in_make_id = (SELECT id FROM master_make WHERE name = 'Mercedes Benz') AND interested_in_model_id = (SELECT id FROM master_model WHERE name = 'A Class') AND created_date >= '2024-01-01' AND created_date <= '2024-01-31';"
       }
     ]
+    
+    
   }
-  

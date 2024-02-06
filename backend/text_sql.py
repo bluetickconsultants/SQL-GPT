@@ -65,10 +65,10 @@ pg_uri = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{mydatabase
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY,
-                 model="gpt-3.5-turbo", temperature=0)
+                 model="gpt-3.5-turbo-1106", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
 # print(db_sql.dialect)
-# print(db_sql.get_usable_table_names())
+#print(db_sql.get_usable_table_names())
 
 with open('examples.json', 'r') as examples_file:
     examples_data = json.load(examples_file)
