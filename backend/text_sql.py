@@ -175,10 +175,10 @@ def ask_question():
             txt = f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
 
-            # Save query log to the database
-            query_log = QueryLog(user_id=current_user, query=question, response=ans, is_resolves=True, created_at=datetime.utcnow())
-            db.session.add(query_log)
-            db.session.commit()
+
+            #query_log = QueryLog(user_id=current_user, query=question, response=ans, is_resolves=True, created_at=datetime.utcnow())
+            #db.session.add(query_log)
+            #db.session.commit()
 
             return jsonify({'user': current_user, 'answer': ans, 'console_output': captured_output_str})
     except Exception as e:

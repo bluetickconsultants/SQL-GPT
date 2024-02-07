@@ -148,6 +148,4 @@
 
             DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
 
-            If the question does not seem related to the database, just return "I don't know" as the answer.
-
             Here are some examples of user inputs and their corresponding SQL queries:"""
