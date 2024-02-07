@@ -120,8 +120,6 @@ def load_system_prefix():
 
 @app.route('/ask', methods=['POST'])
 @jwt_required()
-@app.route('/ask', methods=['POST'])
-@jwt_required()
 def ask_question():
     try:
         current_user = get_jwt_identity()
