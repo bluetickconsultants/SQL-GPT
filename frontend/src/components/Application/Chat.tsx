@@ -75,6 +75,7 @@ const Chat = () => {
             );
 
             console.log("API response:", response.data?.answer);
+            
 
             // Simulate delay for loader visibility
             setTimeout(() => {
@@ -88,8 +89,20 @@ const Chat = () => {
 
             }, 1000);
             setRunapi(() => runapi + 1)
-        } catch (error) {
-            console.error('API Error:', error);
+        } catch (error:any) {
+            console.error('API Error:', error.response.data.error);
+            
+            setTimeout(() => {
+                setApiResponse(error.response.data.error);
+
+                // Add API response to the UI
+                const newMessage = { type: 'incoming', text: `Error: ${error.response.data.error}` };
+                setMessages((prevMessages) => [...prevMessages, newMessage]);
+                setApiResponse('');
+                setIsLoading(false);
+
+            }, 1000);
+            setRunapi(() => runapi + 1)
             setIsLoading(false);
             // Handle the error as needed
         }
@@ -136,21 +149,21 @@ const Chat = () => {
                             key={index}
                             className={`flex mb-4 items-center cursor-pointer justify-${message.type === 'outgoing' ? 'end' : 'start'}`}
                         >
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${message.type === 'outgoing' ? 'ml-2' : 'mr-2'}`}>
+                            
+                            <div
+                                className={`flex max-w-96 bg-${message.type === 'outgoing' ? '#bb44b1' : 'bb44b1'} text-${message.type === 'outgoing' ? 'gray-700' : 'gray-700'} rounded-lg p-3 gap-3`}
+                            >
+                                <p className={`flex max-w-96 bg-${message.type === 'outgoing' ? 'white' : '[#bb44b1]'} text-${message.type === 'outgoing' ? 'black' : 'white'} border  rounded-lg p-3 gap-3 text-[1.25rem]`}>{message.text}</p>
+                            </div>
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${message.type === 'outgoing' ? 'mr-2' : 'ml-2'}`}>
                                 <img
                                     src={message.type === 'outgoing' ? "./autohangar.svg" : "./vite.svg"}
                                     alt={message.type === 'outgoing' ? 'My Avatar' : 'User Avatar'}
                                     className="w-15 h-15 rounded-full"
                                 />
                             </div>
-                            <div
-                                className={`flex max-w-96 bg-${message.type === 'outgoing' ? '#bb44b1' : 'bb44b1'} text-${message.type === 'outgoing' ? 'gray-700' : 'gray-700'} rounded-lg p-3 gap-3`}
-                            >
-                                <p className={`flex max-w-96 bg-${message.type === 'outgoing' ? 'white' : '[#bb44b1]'} text-${message.type === 'outgoing' ? 'black' : 'white'} rounded-lg p-3 gap-3 text-[1.25rem]`}>{message.text}</p>
-                            </div>
                         </div>
                     ))}
-
                     {/* Placeholder loader */}
                     {isLoading && (
                         <div className="flex justify-end mb-4 cursor-pointer">
@@ -168,16 +181,32 @@ const Chat = () => {
                     )}
 
                     {showPredefinedQuestions && (
-                        // Display predefined questions only if showPredefinedQuestions is true
-                        predefinedQuestions.map((question, index) => (
-                            <div
-                                key={index}
-                                className="cursor-pointer border border-purple-300 w-[30rem] rounded-lg bg-[#bb44b1]  mb-[1rem] flex flex-col gap-[1rem] items-center"
-                                onClick={() => handlePredefinedQuestionClick(question)}
-                            >
-                                <p className='p-[1rem] text-white'>{`${question}`}</p>
+                        <div className="grid grid-cols-2 gap-2 mt-[17rem] mx-[1rem]">
+                            {/* Display first three questions */}
+                            <div className="flex flex-col gap-4">
+                                {predefinedQuestions.slice(0, 3).map((question, index) => (
+                                    <div
+                                        key={index}
+                                        className="cursor-pointer border border-purple-300 w-[30rem] rounded-lg bg-[#bb44b1]  mb-[1rem] flex flex-col gap-[1rem] items-center"
+                                        onClick={() => handlePredefinedQuestionClick(question)}
+                                    >
+                                        <p className='p-[1rem] text-white'>{question}</p>
+                                    </div>
+                                ))}
                             </div>
-                        ))
+                            {/* Display last three questions */}
+                            <div className="flex flex-col gap-4">
+                                {predefinedQuestions.slice(3, 6).map((question, index) => (
+                                    <div
+                                        key={index + 3} // Adding an offset to ensure unique keys
+                                        className="cursor-pointer border border-purple-300 w-[30rem] rounded-lg bg-[#bb44b1]  mb-[1rem] flex flex-col gap-[1rem] items-center"
+                                        onClick={() => handlePredefinedQuestionClick(question)}
+                                    >
+                                        <p className='p-[1rem] text-white'>{question}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
                 </div>
 
@@ -192,7 +221,7 @@ const Chat = () => {
                             className="w-full p-2 rounded-md border border-gray-400 focus:outline-none focus:border-[#bb44b1]"
                         />
                         <button
-                            onClick={() => handleSendMessage(inputMessage)}
+                            onClick={() => {handleSendMessage(inputMessage);setShowPredefinedQuestions(false)}}
                             className="bg-[#6f1d62] text-white px-4 py-2 rounded-md ml-2"
                         >
                             Send

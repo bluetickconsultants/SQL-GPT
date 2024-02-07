@@ -33,7 +33,8 @@ const Login: React.FC = () => {
 
 
             // Use the navigate function to go to the /app route
-            navigate('/app');
+            // navigate('/app');
+            window.location.href = '#/app'; 
 
             // You can handle the response as needed, e.g., redirect or show a success message.
         } catch (error: any) {

@@ -53,7 +53,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
-    
+
 
 class QueryLog(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -61,13 +61,13 @@ class QueryLog(db.Model):
     query = db.Column(db.String(500), nullable=False)
     response = db.Column(db.String(500), nullable=False)
     is_resolves = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, nullable=False,
+                           default=datetime.utcnow)
 
     user = db.relationship('User', backref=db.backref('query_logs', lazy=True))
 
 
 migrate.init_app(app, db)
-
 
 
 # LangChain configuration
@@ -84,7 +84,7 @@ gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY,
                  model="gpt-3.5-turbo-1106", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
 # print(db_sql.dialect)
-#print(db_sql.get_usable_table_names())
+# print(db_sql.get_usable_table_names())
 
 with open('examples.json', 'r') as examples_file:
     examples_data = json.load(examples_file)
@@ -132,7 +132,7 @@ def ask_question():
         if contains_write_keywords(question):
             txt = f'User {current_user} attempted a query with write keywords: {question}'
             app.logger.warning(txt)
-            sys.stdout = original_stdout
+            # sys.stdout = original_stdout
             return jsonify({'error': 'Query contains write keywords'}), 400
         else:
             original_stdout = sys.stdout
@@ -175,10 +175,9 @@ def ask_question():
             txt = f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
 
-
-            #query_log = QueryLog(user_id=current_user, query=question, response=ans, is_resolves=True, created_at=datetime.utcnow())
-            #db.session.add(query_log)
-            #db.session.commit()
+            # query_log = QueryLog(user_id=current_user, query=question, response=ans, is_resolves=True, created_at=datetime.utcnow())
+            # db.session.add(query_log)
+            # db.session.commit()
 
             return jsonify({'user': current_user, 'answer': ans, 'console_output': captured_output_str})
     except Exception as e:

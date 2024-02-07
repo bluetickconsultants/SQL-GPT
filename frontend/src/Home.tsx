@@ -53,10 +53,10 @@ const Home = () => {
                     <div className="flex md:flex-row flex-col md:gap-[8rem] gap-[4rem] items-center justify-between mx-[3rem] md:mt-[1rem]">
                         <div className="flex flex-col gap-[2rem] md:w-[28rem]">
                             <div>
-                                <h1 className="md:text-[4rem] text-[3rem] font-bold text-[#000] mb-4">AutoHanger</h1>
-                                <h1 className="md:text-[2rem] text-[2rem] font-bold text-[#000]">Welcome to Auto Hanger Advantage</h1>
+                                <h1 className="md:text-[4rem] text-[3rem] font-bold text-[#000] mb-4">SQL GPT</h1>
+                                <h1 className="md:text-[2rem] text-[2rem] font-bold text-[#000]">Welcome to AI powered MIS reports</h1>
                             </div>
-                            <h1 className="md:text-[1.5rem] text-[1.9rem] text-[#000] ">Lorem, ipsum dolor sit amet consectetur adipisicing elit. Mollitia doloremque quod asperiores eum modi quasi, sunt quaerat perspiciatis corporis illum officia magni neque temporibus, repudiandae ad dignissimos voluptatem aliquid necessitatibus!</h1>
+                            <h1 className="md:text-[1.5rem] text-[1.9rem] text-[#000] ">In the realm of enterprise data management, SQL databases have long stood as the backbone, housing vast quantities of invaluable information.Let us leverage Large Language Models (LLMs) to interact with SQL databases using natural language. </h1>
                             <Link to="/login" className="link-styles">
                                 <button className="px-6 py-2 w-[8rem] font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-[#6f1d62]  hover:bg-[#bb44b1] focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-80">
                                     TRY NOW
