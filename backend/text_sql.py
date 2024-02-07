@@ -120,6 +120,8 @@ def load_system_prefix():
 
 @app.route('/ask', methods=['POST'])
 @jwt_required()
+@app.route('/ask', methods=['POST'])
+@jwt_required()
 def ask_question():
     try:
         current_user = get_jwt_identity()
@@ -127,7 +129,6 @@ def ask_question():
         question = data['question']
 
         txt = f'User {current_user} asked: {question}'
-
         app.logger.info(txt)
 
         if contains_write_keywords(question):
@@ -159,7 +160,7 @@ def ask_question():
                     MessagesPlaceholder("agent_scratchpad"),
                 ]
             )
-            print("done")
+
             agent = create_sql_agent(
                 llm=gpt,
                 db=db_sql,
@@ -168,13 +169,19 @@ def ask_question():
                 agent_type="openai-tools",
                 agent_executor_kwargs={"handle_parsing_errors": True}
             )
-            print("done")
+
             ans = agent.invoke({"input": f"{question}"})
             sys.stdout = original_stdout
 
             captured_output_str = captured_output.getvalue()
             txt = f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
+
+            # Save query log to the database
+            query_log = QueryLog(user_id=current_user, query=question, response=ans, is_resolves=True, created_at=datetime.utcnow())
+            db.session.add(query_log)
+            db.session.commit()
+
             return jsonify({'user': current_user, 'answer': ans, 'console_output': captured_output_str})
     except Exception as e:
         app.logger.error(f'Error for user {current_user}: {str(e)}')
