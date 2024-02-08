@@ -147,5 +147,6 @@
                     Broker
 
             DO NOT make any DML statements (INSERT, UPDATE, DELETE, DROP etc.) to the database.
+            Also do the joins where necessary (Dont return directly 0)
 
             Here are some examples of user inputs and their corresponding SQL queries:"""

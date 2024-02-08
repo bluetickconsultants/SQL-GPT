@@ -4,7 +4,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_migrate import Migrate, upgrade
-from datetime import datetime
+from datetime import datetime,timedelta
 
 import os
 import re
@@ -34,6 +34,17 @@ from langchain_core.prompts import (
 )
 
 
+from langchain.tools.sql_database.tool import (
+InfoSQLDatabaseTool,
+ListSQLDatabaseTool,
+QuerySQLDataBaseTool,
+)
+
+# assign your llm and db
+
+info_sql_database_tool_description = """Input to this tool is a comma separated list of tables, output is the schema and sample rows for those tables.Be sure that the tables actually exist by calling list_tables_sql_db first! Example Input: table1, table2, table3"""
+
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -44,6 +55,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 app.config['JWT_SECRET_KEY'] = os.getenv(
     "JWT_SECRET_KEY")  # Change this to a secret key for JWT
+
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=5)  # Example: Token expires after 24 hours
+
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -85,6 +99,13 @@ gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY,
 db_sql = SQLDatabase.from_uri(pg_uri)
 # print(db_sql.dialect)
 # print(db_sql.get_usable_table_names())
+
+tools = [
+QuerySQLDataBaseTool(db=db_sql),
+InfoSQLDatabaseTool(db=db_sql, description=info_sql_database_tool_description),
+ListSQLDatabaseTool(db=db_sql)
+]
+
 
 with open('examples.json', 'r') as examples_file:
     examples_data = json.load(examples_file)
@@ -165,6 +186,7 @@ def ask_question():
                 prompt=full_prompt,
                 verbose=True,
                 agent_type="openai-tools",
+                extra_tools=tools,
                 agent_executor_kwargs={"handle_parsing_errors": True}
             )
 
