@@ -20,6 +20,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.agent_toolkits import create_sql_agent
 from langchain_community.utilities import SQLDatabase
 from langchain.agents import AgentExecutor
+from langchain.memory import ConversationBufferMemory
 
 import json
 
@@ -95,7 +96,7 @@ pg_uri = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{mydatabase
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY,
-                 model="gpt-3.5-turbo-1106", temperature=0)
+                 model="gpt-4-0125-preview", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
 # print(db_sql.dialect)
 # print(db_sql.get_usable_table_names())
@@ -119,8 +120,9 @@ example_selector = SemanticSimilarityExampleSelector.from_examples(
     k=5,
     input_keys=["input"],
 )
-print(example_selector)
+#print(example_selector)
 
+memory = ConversationBufferMemory(memory_key = 'history' , input_key = 'input')
 
 def contains_write_keywords(text):
     write_keywords = ['UPDATE', 'INSERT', 'DELETE', 'ALTER', 'CREATE',
@@ -187,7 +189,7 @@ def ask_question():
                 verbose=True,
                 agent_type="openai-tools",
                 extra_tools=tools,
-                agent_executor_kwargs={"handle_parsing_errors": True}
+                agent_executor_kwargs={"handle_parsing_errors": True,'memory':memory}
             )
 
             ans = agent.invoke({"input": f"{question}"})
