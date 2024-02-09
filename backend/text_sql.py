@@ -4,6 +4,7 @@ from flask_cors import CORS
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_migrate import Migrate, upgrade
+from sqlalchemy import or_
 from datetime import datetime,timedelta
 
 import os
@@ -199,14 +200,62 @@ def ask_question():
             txt = f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
 
-            # query_log = QueryLog(user_id=current_user, query=question, response=ans, is_resolves=True, created_at=datetime.utcnow())
-            # db.session.add(query_log)
-            # db.session.commit()
+            response_json = json.dumps(ans['output'])
+            
+            user_id = User.query.filter_by(username=current_user).first().id
+
+            query_log = QueryLog(user_id=user_id, query=question, response=response_json, is_resolves=True,
+                                 created_at=datetime.utcnow())
+            db.session.add(query_log)
+            db.session.commit()
 
             return jsonify({'user': current_user, 'answer': ans, 'console_output': captured_output_str})
     except Exception as e:
         app.logger.error(f'Error for user {current_user}: {str(e)}')
         return jsonify({'error': str(e)}), 500
+    
+    
+
+@app.route('/dashboard/', methods=['GET'])
+def dashboard():
+    try:
+        name_filters = request.args.get('name')
+        date_filters = request.args.get('date')
+        is_resolved_filters = request.args.get('is_resolved')
+
+        query = db.session.query(QueryLog).join(User).filter(User.username == name_filters)
+
+        if name_filters:
+            name_filters = name_filters.split(',')
+            query = query.filter(User.username.in_(name_filters))
+
+        if date_filters:
+            date_filters = date_filters.split(',')
+            date_query = or_(*[QueryLog.created_at.startswith(date) for date in date_filters])
+            query = query.filter(date_query)
+
+        if is_resolved_filters is not None:
+            is_resolved_filters = [value.lower() == 'true' for value in is_resolved_filters.split(',')]
+            is_resolved_query = or_(*[QueryLog.is_resolves == is_resolved for is_resolved in is_resolved_filters])
+            query = query.filter(is_resolved_query)
+
+        logs = query.all()
+
+        serialized_logs = [{
+            'id': log.id,
+            'user_id': log.user_id,
+            'query': log.query,
+            'response': log.response,
+            'is_resolved': log.is_resolves,
+            'created_at': log.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for log in logs]
+
+        return jsonify({'logs': serialized_logs})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 
 
 @app.route('/login', methods=['POST'])
