@@ -5,6 +5,7 @@ import Application from "./Application";
 import MainApplication from './MainApplication';
 import Login from './Login';
 import Home from './Home';
+import Dashboard from './Dashboard';
 
 function App() {
   const isAuthenticated = !!localStorage.getItem('accessToken');
@@ -18,6 +19,10 @@ function App() {
           <Route
             path="/app"
             element={isAuthenticated ? <Application /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/dashboard"
+            element={isAuthenticated ? <Dashboard /> : <Navigate to="/login" />}
           />
           {/* <Route path="/" element={<Application />} />
                     <Route path="/app-main" element={<MainApplication />} /> */}

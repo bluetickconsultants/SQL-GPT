@@ -34,7 +34,7 @@ const Nav: React.FC = () => {
                     </li>
                     <li className="group relative">
                         <a
-                            href="/"
+                            href="#/dashboard"
                             aria-label="Dashboard"
                             title="Dashboard"
                             className="font-medium tracking-wide text-[#6f1d62] transition-colors duration-200 group-hover:text-deep-purple-accent-400"

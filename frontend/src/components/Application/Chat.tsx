@@ -4,7 +4,7 @@ import axios from 'axios';
 
 
 const Chat = () => {
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(true);
     const [apiResponse, setApiResponse] = useState<string>('');
     const [inputMessage, setInputMessage] = useState<string>('');
     const [messages, setMessages] = useState<Array<{ type: string; text: string }>>([]);
@@ -30,7 +30,7 @@ const Chat = () => {
 
     const toggleMenu = () => {
         setIsMenuOpen(!isMenuOpen);
-        setShowPredefinedQuestions(true); // Show predefined questions when menu is toggled
+        setShowPredefinedQuestions(false); // Show predefined questions when menu is toggled
     };
 
     const closeMenu = (e: React.MouseEvent) => {
@@ -75,7 +75,7 @@ const Chat = () => {
             );
 
             console.log("API response:", response.data?.answer);
-            
+
 
             // Simulate delay for loader visibility
             setTimeout(() => {
@@ -89,9 +89,9 @@ const Chat = () => {
 
             }, 1000);
             setRunapi(() => runapi + 1)
-        } catch (error:any) {
+        } catch (error: any) {
             console.error('API Error:', error.response.data.error);
-            
+
             setTimeout(() => {
                 setApiResponse(error.response.data.error);
 
@@ -116,11 +116,15 @@ const Chat = () => {
     };
 
     return (
-        <div className="flex" onClick={closeMenu}>
+        <div className={`${isMenuOpen ? 'flex' : 'flex justify-center'}`} onClick={closeMenu}>
+            <div className={`${isMenuOpen ? 'hidden' : 'block'}`} onClick={toggleMenu}>
+                <img width="32" height="32" className='cursor-pointer mx-[1rem] absolute' src="https://img.icons8.com/windows/32/menu--v1.png" alt="menu--v1" />
+            </div>
             {/* Sidebar */}
-            <div className="w-1/4 bg-white border-r border-gray-300">
+            <div className={`w-1/4 bg-white border-r border-gray-300  ${isMenuOpen ? 'block' : 'hidden'}`} onClick={toggleMenu}>
                 {/* Sidebar Header */}
-                <header className="p-4 border-b border-gray-300 flex justify-between items-center bg-[#6f1d62] text-white">
+                <header className={`p-4 border-b border-gray-300 flex justify-between items-center bg-[#6f1d62] text-white ${isMenuOpen ? 'block' : 'hidden'}`}>
+                    <img width="32" height="32" className='cursor-pointer' src="https://img.icons8.com/windows/32/000000/menu--v1.png" alt="menu--v1" />
                     <h1 className="text-2xl font-semibold">Logs</h1>
                 </header>
                 <div className='h-screen overflow-y-auto p-4 pb-[20rem]'>
@@ -133,7 +137,7 @@ const Chat = () => {
             </div>
 
             {/* Main Chat Area */}
-            <div className="flex-1">
+            <div className="w-[75%]">
                 {/* Chat Header */}
                 <header className="bg-white p-4 text-gray-700">
                     <a href="#" className="flex items-center justify-end pt-2 mb-0 text-2xl font-semibold text-gray-900 dark:text-white">
@@ -149,7 +153,7 @@ const Chat = () => {
                             key={index}
                             className={`flex mb-4 items-center cursor-pointer justify-${message.type === 'outgoing' ? 'end' : 'start'}`}
                         >
-                            
+
                             <div
                                 className={`flex max-w-96 bg-${message.type === 'outgoing' ? '#bb44b1' : 'bb44b1'} text-${message.type === 'outgoing' ? 'gray-700' : 'gray-700'} rounded-lg p-3 gap-3`}
                             >
@@ -208,26 +212,27 @@ const Chat = () => {
                             </div>
                         </div>
                     )}
+                    <footer className="bg-white border-t border-gray-300 p-4 absolute bottom-0 w-3/4">
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                placeholder="Type a message..."
+                                value={inputMessage}
+                                onChange={(e) => setInputMessage(e.target.value)}
+                                className="w-full p-2 rounded-md border border-gray-400 focus:outline-none focus:border-[#bb44b1]"
+                            />
+                            <button
+                                onClick={() => { handleSendMessage(inputMessage); setShowPredefinedQuestions(false) }}
+                                className="bg-[#6f1d62] text-white px-4 py-2 rounded-md ml-2"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </footer>
                 </div>
 
                 {/* Chat Input */}
-                <footer className="bg-white border-t border-gray-300 p-4 absolute bottom-0 w-3/4">
-                    <div className="flex items-center">
-                        <input
-                            type="text"
-                            placeholder="Type a message..."
-                            value={inputMessage}
-                            onChange={(e) => setInputMessage(e.target.value)}
-                            className="w-full p-2 rounded-md border border-gray-400 focus:outline-none focus:border-[#bb44b1]"
-                        />
-                        <button
-                            onClick={() => {handleSendMessage(inputMessage);setShowPredefinedQuestions(false)}}
-                            className="bg-[#6f1d62] text-white px-4 py-2 rounded-md ml-2"
-                        >
-                            Send
-                        </button>
-                    </div>
-                </footer>
+
             </div>
         </div>
     );
