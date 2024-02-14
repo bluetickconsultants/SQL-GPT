@@ -14,12 +14,12 @@ const Chat = () => {
     const [showPredefinedQuestions, setShowPredefinedQuestions] = useState<boolean>(true);
 
     const predefinedQuestions = [
-        "Total number of test drives in Jan 2024",
-        "Total number of leads in Jan 2024",
-        "Total Number of leads by Amit Ashara in Jan 2024",
-        "Number of Test Drives leads by Amit Ashara in Jan 2024",
-        "Count of Sales of Mercedes Benz A class in January 2024",
-        "Number of Delivery Given by Walk in in Jan 2024",
+        "Total number of test drives in December 2023",
+        "Number of Delivery Given by 'Walk in' in December 2023",
+        "Total Number of leads by Amit Ashara in December 2023",
+        "Total number of leads in December 2023",
+        "Number of Test Drives leads by Amit Ashara in December 2023",
+        "Count of Sales of Mercedes Benz A class in December 2023",
     ];
 
     const handlePredefinedQuestionClick = (question: string) => {

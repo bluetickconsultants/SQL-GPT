@@ -5,7 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import or_
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 
 import os
 import re
@@ -37,9 +37,9 @@ from langchain_core.prompts import (
 
 
 from langchain.tools.sql_database.tool import (
-InfoSQLDatabaseTool,
-ListSQLDatabaseTool,
-QuerySQLDataBaseTool,
+    InfoSQLDatabaseTool,
+    ListSQLDatabaseTool,
+    QuerySQLDataBaseTool,
 )
 
 # assign your llm and db
@@ -58,7 +58,8 @@ app.config['SECRET_KEY'] = os.getenv("SECRET_KEY")
 app.config['JWT_SECRET_KEY'] = os.getenv(
     "JWT_SECRET_KEY")  # Change this to a secret key for JWT
 
-app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=5)  # Example: Token expires after 24 hours
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(
+    hours=5)  # Example: Token expires after 24 hours
 
 jwt = JWTManager(app)
 db = SQLAlchemy(app)
@@ -103,9 +104,10 @@ db_sql = SQLDatabase.from_uri(pg_uri)
 # print(db_sql.get_usable_table_names())
 
 tools = [
-QuerySQLDataBaseTool(db=db_sql),
-InfoSQLDatabaseTool(db=db_sql, description=info_sql_database_tool_description),
-ListSQLDatabaseTool(db=db_sql)
+    QuerySQLDataBaseTool(db=db_sql),
+    InfoSQLDatabaseTool(
+        db=db_sql, description=info_sql_database_tool_description),
+    ListSQLDatabaseTool(db=db_sql)
 ]
 
 
@@ -121,9 +123,10 @@ example_selector = SemanticSimilarityExampleSelector.from_examples(
     k=5,
     input_keys=["input"],
 )
-#print(example_selector)
+# print(example_selector)
 
-memory = ConversationBufferMemory(memory_key = 'history' , input_key = 'input')
+memory = ConversationBufferMemory(memory_key='history', input_key='input')
+
 
 def contains_write_keywords(text):
     write_keywords = ['UPDATE', 'INSERT', 'DELETE', 'ALTER', 'CREATE',
@@ -157,7 +160,7 @@ def ask_question():
             txt = f'User {current_user} attempted a query with write keywords: {question}'
             app.logger.warning(txt)
             # sys.stdout = original_stdout
-            return jsonify({'error': 'Query contains write keywords'}), 400
+            return jsonify({'error': 'You cannot perform insert/update/delete'}), 400
         else:
             original_stdout = sys.stdout
             captured_output = StringIO()
@@ -190,7 +193,8 @@ def ask_question():
                 verbose=True,
                 agent_type="openai-tools",
                 extra_tools=tools,
-                agent_executor_kwargs={"handle_parsing_errors": True,'memory':memory}
+                agent_executor_kwargs={
+                    "handle_parsing_errors": True, 'memory': memory}
             )
 
             ans = agent.invoke({"input": f"{question}"})
@@ -201,7 +205,7 @@ def ask_question():
             app.logger.info(txt)
 
             response_json = json.dumps(ans['output'])
-            
+
             user_id = User.query.filter_by(username=current_user).first().id
 
             query_log = QueryLog(user_id=user_id, query=question, response=response_json, is_resolves=True,
@@ -213,8 +217,7 @@ def ask_question():
     except Exception as e:
         app.logger.error(f'Error for user {current_user}: {str(e)}')
         return jsonify({'error': str(e)}), 500
-    
-    
+
 
 @app.route('/dashboard/', methods=['GET'])
 def dashboard():
@@ -223,7 +226,8 @@ def dashboard():
         date_filters = request.args.get('date')
         is_resolved_filters = request.args.get('is_resolved')
 
-        query = db.session.query(QueryLog).join(User).filter(User.username == name_filters)
+        query = db.session.query(QueryLog).join(
+            User).filter(User.username == name_filters)
 
         if name_filters:
             name_filters = name_filters.split(',')
@@ -231,12 +235,15 @@ def dashboard():
 
         if date_filters:
             date_filters = date_filters.split(',')
-            date_query = or_(*[QueryLog.created_at.startswith(date) for date in date_filters])
+            date_query = or_(*[QueryLog.created_at.startswith(date)
+                             for date in date_filters])
             query = query.filter(date_query)
 
         if is_resolved_filters is not None:
-            is_resolved_filters = [value.lower() == 'true' for value in is_resolved_filters.split(',')]
-            is_resolved_query = or_(*[QueryLog.is_resolves == is_resolved for is_resolved in is_resolved_filters])
+            is_resolved_filters = [
+                value.lower() == 'true' for value in is_resolved_filters.split(',')]
+            is_resolved_query = or_(
+                *[QueryLog.is_resolves == is_resolved for is_resolved in is_resolved_filters])
             query = query.filter(is_resolved_query)
 
         logs = query.all()
@@ -254,8 +261,6 @@ def dashboard():
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
 
 
 @app.route('/login', methods=['POST'])

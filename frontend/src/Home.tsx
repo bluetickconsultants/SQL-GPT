@@ -56,7 +56,8 @@ const Home = () => {
                                 <h1 className="md:text-[4rem] text-[3rem] font-bold text-[#000] mb-4">SQL GPT</h1>
                                 <h1 className="md:text-[2rem] text-[2rem] font-bold text-[#000]">Welcome to AI powered MIS reports</h1>
                             </div>
-                            <h1 className="md:text-[1.5rem] text-[1.9rem] text-[#000] ">In the realm of enterprise data management, SQL databases have long stood as the backbone, housing vast quantities of invaluable information.Let us leverage Large Language Models (LLMs) to interact with SQL databases using natural language. </h1>
+                            <h1 className="md:text-[1.4rem] text-[1.4rem] text-[#000] ">In the realm of enterprise data management, SQL databases have long stood as the backbone, housing vast quantities of invaluable information. </h1>
+                            <h1 className="md:text-[1.4rem] text-[1.4rem] text-[#000] "> Let us leverage Large Language Models (LLMs) to interact with SQL databases using natural language. </h1>
                             <Link to="/login" className="link-styles">
                                 <button className="px-6 py-2 w-[8rem] font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-[#6f1d62]  hover:bg-[#bb44b1] focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-80">
                                     TRY NOW
