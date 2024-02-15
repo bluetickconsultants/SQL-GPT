@@ -2,7 +2,7 @@
   "examples": [
       {
           "input": "Total number of test drives in December 2023",
-          "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value IN ('Test Drive Completed', 'Delivery Given', 'Order Booked') AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "query": "SELECT COUNT(DISTINCT sales_lead_id) FROM sales_inventory_saleslog WHERE new_value IN ('Test Drive Completed', 'Delivery Given', 'Order Booked') AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
           "input": "Total number of leads in December 2023",
@@ -10,38 +10,38 @@
       },
       {
           "input": "Number of qualified leads in December 2023 by Amit",
-          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = (SELECT id FROM auth_user WHERE username = 'Amit Ashara') AND status = 'Qualified' AND state = 'Open' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara') AND status = 'Qualified' AND state = 'Open' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
           "input": "Number of all leads  in December 2023:",
-          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to = 'Amit Ashara' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara') AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
-          "input": "Number of Yet to be contacted leads by Amit Ashara in December 2023",
-          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Yet to Contact' AND assigned_to = 'Amit Ashara' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "input": "Number of Yet to be contacted leads by Amit in December 2023",
+          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Yet to Contact' AND assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara') AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
-          "input": "Number of Test Drives leads by Amit Ashara in December 2023",
-          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to = 'Amit Ashara' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "input": "Number of Test Drives leads by Amit in December 2023",
+          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara')  AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
-          "input": "Number of Delivery Given leads by Amit Ashara in December 2023",
-          "query": "SELECT COUNT(DISTINCT sales_lead, new_value) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND assigned_to = 'Amit Ashara' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "input": "Number of Delivery Given leads by Amit in December 2023------",
+          "query": "SELECT COUNT(DISTINCT sales_lead, new_value) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara')  AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
-          "input": "Number of Bookings leads by Amit Ashara in December 2023",
-          "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value = 'Order Booked' AND assigned_to = 'Amit Ashara' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "input": "Number of Bookings leads by Amit in December 2023",
+          "query": "SELECT COUNT(DISTINCT sales_lead_id) FROM sales_inventory_saleslog WHERE new_value = 'Order Booked' AND sales_lead_id IN (SELECT id FROM sales_inventory_saleslead WHERE assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara')) AND EXTRACT(MONTH FROM created_date) = 12AND EXTRACT(YEAR FROM created_date) = 2023;" 
       },
       {
           "input": "Number of Delivery Given by Walk-in in December 2023",
-          "query": "SELECT COUNT(DISTINCT sales_lead) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND sales_lead_source = 'Walk-in' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "query": "SELECT COUNT(DISTINCT s.sales_lead_id) FROM sales_inventory_saleslog AS s JOIN sales_inventory_saleslead AS sl ON s.sales_lead_id = sl.id WHERE s.new_value = 'Delivery Given' AND sl.source = 'Walk-in' AND EXTRACT(MONTH FROM s.created_date) = 12 AND EXTRACT(YEAR FROM s.created_date) = 2023;"
       },
       {
-          "input": "Calculate Percentage of Conversion and Test drives done by Amit Ashara:",
-          "query": "SELECT COUNT(*) AS total_leads, ROUND((COUNT(DISTINCT CASE WHEN new_value IN ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') THEN sales_lead END) * 100.0 / COUNT(*)), 2) AS test_drive_percentage, ROUND((COUNT(DISTINCT CASE WHEN new_value IN ('Delivery Given', 'Delivery Feedback Completed') THEN sales_lead END) * 100.0 / COUNT(*)), 2) AS conversion_percentage FROM sales_inventory_saleslog WHERE sales_lead_assigned_to = 'Amit Ashara';"
+          "input": "Calculate Percentage of Conversion and Test drives done by Amit:",
+          "query": "SELECT COUNT(*) AS total_leads, ROUND((COUNT(DISTINCT CASE WHEN s.new_value IN ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') THEN s.sales_lead_id END) * 100.0 / COUNT(*)), 2) AS test_drive_percentage, ROUND((COUNT(DISTINCT CASE WHEN s.new_value IN ('Delivery Given', 'Delivery Feedback Completed') THEN s.sales_lead_id END) * 100.0 / COUNT(*)), 2) AS conversion_percentage FROM sales_inventory_saleslog AS s JOIN sales_inventory_saleslead AS sl ON s.sales_lead_id = sl.id WHERE sl.assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara');"
       },
       {
-        "input": "Sales of Mercedes Benz A class count in December 2023",
+        "input": "Sales of Mercedes Benz A class count in December 2023----------",
         "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE interested_in_model_name = 'Mercedes Benz' AND interested_in_make_name = 'A Class' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
     }
   ]
