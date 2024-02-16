@@ -25,8 +25,8 @@
           "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE status = 'Qualified' AND state = 'Open' AND assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara')  AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
       },
       {
-          "input": "Number of Delivery Given leads by Amit in December 2023------",
-          "query": "SELECT COUNT(DISTINCT sales_lead, new_value) FROM sales_inventory_saleslog WHERE new_value = 'Delivery Given' AND assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara')  AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
+          "input": "Number of Delivery Given leads by Amit in December 2023",
+          "query": "SELECT COUNT(*) FROM sales_inventory_saleslead AS sl JOIN sales_inventory_saleslog AS s ON sl.created_by_id = s.created_by_id WHERE s.new_value = 'Delivery Given' AND sl.assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara') AND EXTRACT(MONTH FROM s.created_date) = 11 AND EXTRACT(YEAR FROM s.created_date) = 2023;"
       },
       {
           "input": "Number of Bookings leads by Amit in December 2023",
@@ -41,8 +41,7 @@
           "query": "SELECT COUNT(*) AS total_leads, ROUND((COUNT(DISTINCT CASE WHEN s.new_value IN ('Test Drive Completed', 'Test Drive Feedback Completed', 'Under Negotiation', 'Order Booked', 'Payment Received', 'Delivery Given', 'Delivery Feedback Completed') THEN s.sales_lead_id END) * 100.0 / COUNT(*)), 2) AS test_drive_percentage, ROUND((COUNT(DISTINCT CASE WHEN s.new_value IN ('Delivery Given', 'Delivery Feedback Completed') THEN s.sales_lead_id END) * 100.0 / COUNT(*)), 2) AS conversion_percentage FROM sales_inventory_saleslog AS s JOIN sales_inventory_saleslead AS sl ON s.sales_lead_id = sl.id WHERE sl.assigned_to_id = (SELECT id FROM auth_user WHERE username = 'amit-ashara');"
       },
       {
-        "input": "Sales of Mercedes Benz A class count in December 2023----------",
-        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead WHERE interested_in_model_name = 'Mercedes Benz' AND interested_in_make_name = 'A Class' AND EXTRACT(MONTH FROM created_date) = 12 AND EXTRACT(YEAR FROM created_date) = 2023;"
-    }
+        "input": "Sales of Mercedes Benz A class count in December 2023",
+        "query": "SELECT COUNT(*) FROM sales_inventory_saleslead AS sl JOIN master_make AS mm ON sl.interested_in_make_id = mm.id JOIN master_model AS mo ON sl.interested_in_model_id = mo.id WHERE mm.name = 'Mercedes-Benz' AND mo.name = 'A-Class' AND EXTRACT(MONTH FROM sl.created_date) = 11 AND EXTRACT(YEAR FROM sl.created_date) = 2023;"}
   ]
 }

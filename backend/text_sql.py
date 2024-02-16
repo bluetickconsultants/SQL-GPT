@@ -22,6 +22,10 @@ from langchain_community.agent_toolkits import create_sql_agent
 from langchain_community.utilities import SQLDatabase
 from langchain.agents import AgentExecutor
 from langchain.memory import ConversationBufferMemory
+from langchain.text_splitter import RecursiveJsonSplitter
+from langchain.docstore.document import Document
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
 
 import json
 
@@ -103,6 +107,51 @@ db_sql = SQLDatabase.from_uri(pg_uri)
 # print(db_sql.dialect)
 # print(db_sql.get_usable_table_names())
 
+text=db_sql.run("""
+       SELECT
+    ag.name AS group_name,
+    au.first_name,
+    au.last_name,
+	au.username,
+	au.email
+	
+FROM
+    public.auth_group AS ag
+JOIN
+    public.auth_user AS au ON au.id IN (
+        SELECT
+            aug.user_id
+        FROM
+            public.auth_user_groups AS aug
+        WHERE
+            aug.group_id = ag.id
+    );""")
+
+
+data_list = eval(text)
+result = []
+for item in data_list:
+    result.append({
+        "Position": item[0] if item[0] else None,
+        "First Name": item[1] if item[1] else None,
+        "Last Name": item[2] if item[2] else None,
+        "Username": item[3] if item[3] else None,
+        "Email": item[4] if item[4] else None
+    })
+
+json_data = json.dumps(result, indent=4)
+
+document =  []
+for item in range(len(result)):
+    page = Document(page_content=str(result[item]),
+    metadata = {"sequence": item})
+    document.append(page)
+
+embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
+
+chroma_db = Chroma.from_documents(document, embeddings)
+
+
 tools = [
     QuerySQLDataBaseTool(db=db_sql),
     InfoSQLDatabaseTool(
@@ -162,11 +211,18 @@ def ask_question():
             # sys.stdout = original_stdout
             return jsonify({'error': 'You cannot perform insert/update/delete'}), 400
         else:
+            matching_docs = chroma_db.similarity_search(question)
+            matched=matching_docs[0].page_content
+            matched=matched[1:-1]
+            #print(type(matched))
+            #print(matched)
             original_stdout = sys.stdout
             captured_output = StringIO()
             sys.stdout = captured_output
 
             system_prefix = load_system_prefix()
+            #system_prefix = system_prefix+f"The current user details are {matched}"
+            #print(system_prefix)
 
             few_shot_prompt = FewShotPromptTemplate(
                 example_selector=example_selector,
@@ -175,9 +231,10 @@ def ask_question():
                 ),
                 input_variables=["input", "dialect", "top_k"],
                 prefix=system_prefix,
-                suffix="",
+                suffix=f"The current user details are {matched}",
             )
-
+            #few_shot_prompt+=f"The current user details are {matched}"
+            #print(few_shot_prompt)
             full_prompt = ChatPromptTemplate.from_messages(
                 [
                     SystemMessagePromptTemplate(prompt=few_shot_prompt),
