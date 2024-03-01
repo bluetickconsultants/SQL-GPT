@@ -28,6 +28,8 @@ from langchain.vectorstores import Chroma
 from langchain.embeddings import OpenAIEmbeddings
 
 import json
+import os
+from openai import OpenAI
 
 from langchain.chat_models import ChatOpenAI
 
@@ -101,6 +103,8 @@ pg_uri = f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{mydatabase
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
 gpt = ChatOpenAI(openai_api_key=OPENAI_API_KEY,
                  model="gpt-4-0125-preview", temperature=0)
 db_sql = SQLDatabase.from_uri(pg_uri)
@@ -176,6 +180,9 @@ example_selector = SemanticSimilarityExampleSelector.from_examples(
 
 memory = ConversationBufferMemory(memory_key='history', input_key='input')
 
+client = OpenAI(
+  api_key=os.environ.get("OPENAI_API_KEY")
+)
 
 def contains_write_keywords(text):
     write_keywords = ['UPDATE', 'INSERT', 'DELETE', 'ALTER', 'CREATE',
@@ -193,6 +200,22 @@ def load_system_prefix():
     with open('system_prefix.txt', 'r') as file:
         return file.read()
 
+def parsing_llm(question):
+    response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": """You are parser which looks that given string has three 
+                                                values to displayed which is output after running SQL query.
+                                                If three values are not present then return as it is else 
+                                                return the three values as output in tabular format."""},
+                {"role": "user", "content": question},
+            ],
+            temperature=0,
+            max_tokens=1024,
+            n=1,
+            stop=None
+        )
+    return response.choices[0].message.content
 
 @app.route('/ask', methods=['POST'])
 @jwt_required()
@@ -231,7 +254,7 @@ def ask_question():
                 ),
                 input_variables=["input", "dialect", "top_k"],
                 prefix=system_prefix,
-                suffix=f"The current user details are {matched}",
+                suffix=f"The current user details are {matched}.",
             )
             #few_shot_prompt+=f"The current user details are {matched}"
             #print(few_shot_prompt)
@@ -255,11 +278,14 @@ def ask_question():
             )
 
             ans = agent.invoke({"input": f"{question}"})
+            
             sys.stdout = original_stdout
 
             captured_output_str = captured_output.getvalue()
             txt = f'User {current_user} received answer: {ans}'
             app.logger.info(txt)
+            
+            ans['output'] = parsing_llm(ans['output'])
 
             response_json = json.dumps(ans['output'])
 
